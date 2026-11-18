@@ -1,0 +1,18 @@
+{
+  "testCaseId": "TC-REMOTION-60FPS",
+  "filmId": "BronzeHeritageFilm",
+  "durationFrames": 900,
+  "targetFps": 60,
+  "totalDurationSeconds": 15,
+  "observedMetrics": {
+    "totalFramesRendered": 900,
+    "droppedFrames": 0,
+    "dropRatePercent": 0,
+    "meanDeltaMs": 16.667,
+    "stdDevDeltaMs": 0.206,
+    "averageFps": 60,
+    "maxFrameDeltaMs": 17.065,
+    "minFrameDeltaMs": 16.268
+  },
+  "verdict": "PASSED"
+}

@@ -1,0 +1,31 @@
+{
+  "testCaseId": "TC-NFR-7.1",
+  "timestamp": "2026-11-18T09:53:04.499Z",
+  "environment": {
+    "nodeVersion": "v22.22.2",
+    "chromeVersion": "Chrome 157.0.8103.79",
+    "os": "win32 x64"
+  },
+  "metrics": {
+    "coldStartMs": 1891,
+    "hotStartMs": 555,
+    "budgetMs": 2000,
+    "passed": true
+  },
+  "breakdown": {
+    "cold": {
+      "daemonPort": 9720,
+      "viewportPort": 8848,
+      "serverReadyMs": 343,
+      "canvasInteractiveMs": 1548,
+      "cacheStatus": "CLEANED_NO_CACHE"
+    },
+    "hot": {
+      "daemonPort": 9720,
+      "viewportPort": 8848,
+      "serverReadyMs": 109,
+      "canvasInteractiveMs": 446,
+      "cacheStatus": "VITE_CACHE_HIT"
+    }
+  }
+}

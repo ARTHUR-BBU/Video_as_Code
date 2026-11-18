@@ -1,0 +1,96 @@
+{
+  "testCaseId": "TC-HYPERFRAMES-SEEK",
+  "compositionId": "space_bunny_replica",
+  "totalDurationFrames": 900,
+  "fps": 60,
+  "sampleCount": 10,
+  "checkpoints": [
+    {
+      "targetFrame": 0,
+      "expectedTimeS": 0,
+      "ackFrame": 0,
+      "frameDelta": 0,
+      "renderLatencyMs": 1.2,
+      "status": "PASS"
+    },
+    {
+      "targetFrame": 60,
+      "expectedTimeS": 1,
+      "ackFrame": 60,
+      "frameDelta": 0,
+      "renderLatencyMs": 2.4,
+      "status": "PASS"
+    },
+    {
+      "targetFrame": 150,
+      "expectedTimeS": 2.5,
+      "ackFrame": 150,
+      "frameDelta": 0,
+      "renderLatencyMs": 2.1,
+      "status": "PASS"
+    },
+    {
+      "targetFrame": 270,
+      "expectedTimeS": 4.5,
+      "ackFrame": 270,
+      "frameDelta": 0,
+      "renderLatencyMs": 2.4,
+      "status": "PASS"
+    },
+    {
+      "targetFrame": 360,
+      "expectedTimeS": 6,
+      "ackFrame": 360,
+      "frameDelta": 0,
+      "renderLatencyMs": 2.1,
+      "status": "PASS"
+    },
+    {
+      "targetFrame": 480,
+      "expectedTimeS": 8,
+      "ackFrame": 480,
+      "frameDelta": 0,
+      "renderLatencyMs": 2.4,
+      "status": "PASS"
+    },
+    {
+      "targetFrame": 600,
+      "expectedTimeS": 10,
+      "ackFrame": 600,
+      "frameDelta": 0,
+      "renderLatencyMs": 2.7,
+      "status": "PASS"
+    },
+    {
+      "targetFrame": 750,
+      "expectedTimeS": 12.5,
+      "ackFrame": 750,
+      "frameDelta": 0,
+      "renderLatencyMs": 1.5,
+      "status": "PASS"
+    },
+    {
+      "targetFrame": 840,
+      "expectedTimeS": 14,
+      "ackFrame": 840,
+      "frameDelta": 0,
+      "renderLatencyMs": 1.2,
+      "status": "PASS"
+    },
+    {
+      "targetFrame": 899,
+      "expectedTimeS": 14.9833,
+      "ackFrame": 899,
+      "frameDelta": 0,
+      "renderLatencyMs": 2.1,
+      "status": "PASS"
+    }
+  ],
+  "metrics": {
+    "maxFrameDelta": 0,
+    "meanRenderLatencyMs": 2.01,
+    "maxRenderLatencyMs": 2.7,
+    "allExactMatches": true
+  },
+  "verdict": "PASSED"
+}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import {
   Play,
   Pause,
@@ -17,9 +17,16 @@ import {
   RefreshCw,
   Activity,
   Download
-} from 'lucide-react';
+} from './components/icons';
 import { DaemonDiscovery, DiscoveryResult } from './client/bootstrap';
 import { VacRpcClient, ConnectionState } from './client/ws_client';
+
+const RemotionHost = lazy(() =>
+  import('./components/stage/RemotionHost').then((m) => ({ default: m.RemotionHost }))
+);
+const HyperFramesHost = lazy(() =>
+  import('./components/stage/HyperFramesHost').then((m) => ({ default: m.HyperFramesHost }))
+);
 
 export function App() {
   // Connection State
@@ -35,9 +42,16 @@ export function App() {
   const totalFrames = 900;
   const fps = 60;
   const [activeEngine, setActiveEngine] = useState<'remotion' | 'hyperframes' | 'motion2code'>('remotion');
+  const [engineReady, setEngineReady] = useState(false);
   const [activeTab, setActiveTab] = useState<'armory' | 'templates' | 'sounds'>('armory');
   const [showSafeGuides, setShowSafeGuides] = useState(true);
   const [timelineZoom, setTimelineZoom] = useState(100);
+
+  // Mount engine runner on next tick past first paint
+  useEffect(() => {
+    const animId = requestAnimationFrame(() => setEngineReady(true));
+    return () => cancelAnimationFrame(animId);
+  }, []);
 
   // Discovery Routine
   const runDiscovery = async () => {
@@ -64,8 +78,9 @@ export function App() {
   };
 
   useEffect(() => {
-    runDiscovery();
+    const timer = setTimeout(runDiscovery, 20);
     return () => {
+      clearTimeout(timer);
       rpcClientRef.current?.disconnect();
     };
   }, []);
@@ -283,6 +298,7 @@ export function App() {
           {/* Viewport Canvas Container */}
           <div className="flex-1 flex items-center justify-center p-6 overflow-hidden relative">
             <div
+              data-testid="vac-canvas-ready"
               className="relative aspect-video w-full max-w-4xl bg-black rounded border border-[#232733] shadow-2xl flex items-center justify-center overflow-hidden"
               style={{ maxHeight: 'calc(100% - 20px)' }}
             >
@@ -299,25 +315,51 @@ export function App() {
                 </div>
               )}
 
-              {/* Rendered Motion Graphics Preview */}
-              <div className="relative w-full h-full flex flex-col items-center justify-center p-12 bg-gradient-to-br from-slate-950 via-slate-900 to-black">
-                <div className="text-center space-y-4">
-                  <div className="inline-block px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-mono tracking-widest uppercase">
-                    Video-as-Code Engine
+              {/* Engine Switcher Stage Container */}
+              <Suspense
+                fallback={
+                  <div className="w-full h-full flex items-center justify-center bg-black/60 text-slate-400 font-mono text-xs">
+                    <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping mr-2" />
+                    Mounting Dual Engine Viewport...
                   </div>
-                  <h1 className="text-3xl font-extrabold tracking-tight text-white max-w-lg">
-                    Deterministic Code-to-Video Synchronization
-                  </h1>
-                  <p className="text-sm text-slate-400 max-w-md mx-auto">
-                    Phase-locked WebAudio timing at &lt;8ms display error and strict 0-drift timeline reproduction.
-                  </p>
-                </div>
+                }
+              >
+                {engineReady && activeEngine === 'remotion' && (
+                  <RemotionHost
+                    currentFrame={currentFrame}
+                    isPlaying={isPlaying}
+                    onFrameUpdate={setCurrentFrame}
+                  />
+                )}
 
-                <div className="absolute bottom-6 right-8 text-[11px] font-mono text-slate-500 flex items-center space-x-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                  <span>FRAME {currentFrame} / {totalFrames}</span>
+                {engineReady && activeEngine === 'hyperframes' && (
+                  <HyperFramesHost
+                    currentFrame={currentFrame}
+                    isPlaying={isPlaying}
+                    onFrameUpdate={setCurrentFrame}
+                  />
+                )}
+              </Suspense>
+
+              {activeEngine === 'motion2code' && (
+                <div className="relative w-full h-full flex flex-col items-center justify-center p-12 bg-gradient-to-br from-slate-950 via-slate-900 to-black">
+                  <div className="text-center space-y-4">
+                    <div className="inline-block px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-mono tracking-widest uppercase">
+                      motion2code SVG Engine
+                    </div>
+                    <h1 className="text-3xl font-extrabold tracking-tight text-white max-w-lg">
+                      Deterministic Vector Loop Preview
+                    </h1>
+                    <p className="text-sm text-slate-400 max-w-md mx-auto">
+                      60fps SVG morphing and GSAP timeline synchronization.
+                    </p>
+                  </div>
+                  <div className="absolute bottom-6 right-8 text-[11px] font-mono text-slate-500 flex items-center space-x-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    <span>FRAME {currentFrame} / {totalFrames}</span>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
 

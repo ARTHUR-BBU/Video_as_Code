@@ -1,0 +1,13 @@
+{
+  "name": "video-as-code-workspace",
+  "version": "1.0.0",
+  "description": "Video-as-Code Monorepo: Deterministic Code-Driven Video Generation and Studio",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "studio": "npm --prefix vac_studio run studio",
+    "test:net": "npm --prefix vac_studio run test:net",
+    "test:m0": "npm --prefix vac_studio run test:m0",
+    "build": "npm --prefix vac_studio run build"
+  }
+}

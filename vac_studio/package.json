@@ -5,18 +5,22 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "studio": "npx tsx server/studio_launcher.ts",
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "server": "node --loader tsx server/index.ts",
     "server:dev": "npx tsx server/index.ts",
-    "test:net": "npx tsx server/test_tc_net_01.ts"
+    "test:net": "npx tsx server/test_tc_net_01.ts",
+    "test:m0": "npx tsx tests/run_m0_gate_suite.ts"
   },
   "dependencies": {
+    "@remotion/player": "^4.0.544",
     "clsx": "^2.1.1",
     "lucide-react": "^0.460.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "remotion": "^4.0.544",
     "tailwind-merge": "^2.5.4",
     "ws": "^8.18.0"
   },

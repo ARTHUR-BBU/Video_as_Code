@@ -1,10 +1,25 @@
 import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-  plugins: [react()],
   server: {
-    port: 3000,
+    host: '127.0.0.1',
+    port: 8848,
     strictPort: false
+  },
+  esbuild: {
+    jsx: 'automatic'
+  },
+  optimizeDeps: {
+    noDiscovery: true,
+    holdUntilCrawlEnd: false,
+    include: [
+      'react',
+      'react-dom',
+      'react-dom/client',
+      'react/jsx-runtime',
+      'react/jsx-dev-runtime',
+      'clsx',
+      'tailwind-merge'
+    ]
   }
 });
