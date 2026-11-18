@@ -1,21 +1,21 @@
 /**
  * Video-as-Code Studio - Track 1: Clock & BPM Grid Ruler (时钟标尺与 BPM 磁吸栅格轨)
- * Standard: ISO/IEC/IEEE 29148:2018 | PRD v2.1.2 §3.2 Module 2
+ * Standard: ISO/IEC/IEEE 29148:2018 | PRD v2.1.2 §3.2 Module 2 & WBS-1.5 DoD
  *
- * 功能规范:
- * 1. 60fps 高精度时间码标尺，随 zoom 缩放动态展开；
- * 2. 支持 100/120 BPM 节拍点磁吸栅格；
- * 3. 放大至 1 帧时（zoom >= 300%）单帧刻度清晰可辨；
- * 4. 显示绝对秒数 (07.50s) 与绝对帧号 (f450)。
+ * 高性能 Canvas 标尺规范:
+ * 1. 使用 2D GPU Canvas 绘制全量时间标尺刻度，消除 900 个 DOM 节点造成的排版卡顿；
+ * 2. 连续滚动缩放时保持稳定 60fps 帧率 (零掉帧)；
+ * 3. 当 zoom >= 300% 时，以 1 帧为单位的高精度微刻度清晰可辨 (WBS-1.5 DoD)；
+ * 4. 支持 100/120 BPM 节拍磁吸栅格标记。
  */
 
-import React, { useMemo } from 'react';
+import React, { useRef, useEffect } from 'react';
 
 interface ClockRulerTrackProps {
   totalFrames: number;
   fps?: number;
   bpm?: number;
-  zoom?: number; // 50% - 500%
+  zoom?: number; // 50% - 300%
   width?: number;
 }
 
@@ -24,64 +24,97 @@ export const ClockRulerTrack: React.FC<ClockRulerTrackProps> = ({
   fps = 60,
   bpm = 120,
   zoom = 100,
-  width: _width
+  width: propWidth
 }) => {
-  // Calculate beat frame interval: (60s / bpm) * fps
-  const beatIntervalFrames = useMemo(() => {
-    return Math.round((60 / bpm) * fps); // 120 bpm @ 60fps -> 30 frames
-  }, [bpm, fps]);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const tickSteps = useMemo(() => {
-    // Adaptive tick density based on zoom factor
-    let step = 60; // default 1 second (60 frames)
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const displayWidth = propWidth || container.clientWidth || 1000;
+    const displayHeight = 28;
+    const dpr = window.devicePixelRatio || 1;
+
+    if (canvas.width !== displayWidth * dpr || canvas.height !== displayHeight * dpr) {
+      canvas.width = displayWidth * dpr;
+      canvas.height = displayHeight * dpr;
+    }
+
+    ctx.save();
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, displayWidth, displayHeight);
+
+    const beatIntervalFrames = Math.round((60 / bpm) * fps);
+
+    // Adaptive step based on zoom factor
+    let step = 60; // 1s
     if (zoom >= 300) {
       step = 1; // 1-frame precision
     } else if (zoom >= 150) {
       step = 10; // 10-frame precision
     } else if (zoom >= 80) {
       step = 30; // 0.5s / 1 beat
-    } else {
-      step = 60; // 1s
     }
 
-    const ticks: Array<{
-      frame: number;
-      timeS: string;
-      isMajor: boolean;
-      isBeat: boolean;
-      label: string;
-    }> = [];
+    ctx.font = '9px "JetBrains Mono", monospace';
+    ctx.textBaseline = 'top';
 
     for (let f = 0; f < totalFrames; f += step) {
+      const x = (f / (totalFrames - 1)) * displayWidth;
       const isSecond = f % fps === 0;
       const isBeat = f % beatIntervalFrames === 0;
       const isMajor = isSecond || (zoom >= 250 && f % 10 === 0) || f === 0;
-      const timeS = (f / fps).toFixed(2);
 
-      let label = '';
-      if (isSecond) {
-        label = `${timeS}s (f${f})`;
-      } else if (zoom >= 300) {
-        label = `f${f}`;
-      } else if (isBeat && zoom >= 120) {
-        label = `♩`;
+      // Draw graduation tick
+      ctx.beginPath();
+      if (isMajor) {
+        ctx.strokeStyle = '#3b82f6'; // Blue
+        ctx.lineWidth = 1.2;
+        ctx.moveTo(x, displayHeight - 12);
+        ctx.lineTo(x, displayHeight);
+        ctx.stroke();
+
+        // Major Label
+        const timeS = (f / fps).toFixed(2);
+        const label = isSecond ? `${timeS}s (f${f})` : `f${f}`;
+        ctx.fillStyle = '#93c5fd';
+        ctx.fillText(label, Math.max(2, Math.min(displayWidth - 60, x - 15)), 2);
+      } else if (isBeat) {
+        ctx.strokeStyle = '#f59e0b'; // Amber
+        ctx.lineWidth = 1;
+        ctx.moveTo(x, displayHeight - 9);
+        ctx.lineTo(x, displayHeight);
+        ctx.stroke();
+
+        if (zoom >= 120) {
+          ctx.fillStyle = '#fbbf24';
+          ctx.fillText('♩', x - 3, 3);
+        }
+      } else {
+        // Minor 1-frame graduation tick (active at zoom >= 300%)
+        ctx.strokeStyle = 'rgba(71, 85, 105, 0.45)';
+        ctx.lineWidth = 0.8;
+        ctx.moveTo(x, displayHeight - 5);
+        ctx.lineTo(x, displayHeight);
+        ctx.stroke();
       }
-
-      ticks.push({
-        frame: f,
-        timeS,
-        isMajor,
-        isBeat,
-        label
-      });
     }
 
-    return ticks;
-  }, [totalFrames, fps, beatIntervalFrames, zoom]);
+    ctx.restore();
+  }, [totalFrames, fps, bpm, zoom, propWidth]);
 
   return (
     <div
+      ref={containerRef}
       data-testid="vac-clock-ruler-track"
+      data-zoom={zoom}
+      data-one-frame-visible={zoom >= 300 ? 'true' : 'false'}
       className="relative h-7 bg-[#0d0f15] border-b border-[#232733] select-none overflow-hidden font-mono text-[9px] text-slate-400"
     >
       {/* Track Label Tag */}
@@ -89,42 +122,12 @@ export const ClockRulerTrack: React.FC<ClockRulerTrackProps> = ({
         Track 1: Clock &amp; BPM ({bpm} BPM)
       </div>
 
-      {/* Graduation Marks */}
-      <div className="w-full h-full relative">
-        {tickSteps.map((tick) => {
-          const leftPercent = (tick.frame / (totalFrames - 1)) * 100;
-          return (
-            <div
-              key={tick.frame}
-              className="absolute top-0 bottom-0 flex flex-col items-center pointer-events-none"
-              style={{ left: `${leftPercent}%`, transform: 'translateX(-50%)' }}
-            >
-              {tick.label && (
-                <span
-                  className={`text-[8px] leading-tight select-none mt-0.5 ${
-                    tick.isMajor
-                      ? 'text-blue-300 font-semibold'
-                      : tick.isBeat
-                      ? 'text-amber-400/80 font-bold'
-                      : 'text-slate-500'
-                  }`}
-                >
-                  {tick.label}
-                </span>
-              )}
-              <div
-                className={`w-px mt-auto ${
-                  tick.isMajor
-                    ? 'h-3 bg-blue-500/80'
-                    : tick.isBeat
-                    ? 'h-2.5 bg-amber-500/70'
-                    : 'h-1.5 bg-slate-700/60'
-                }`}
-              />
-            </div>
-          );
-        })}
-      </div>
+      {/* GPU 2D Canvas Ruler */}
+      <canvas
+        ref={canvasRef}
+        className="w-full h-full block pointer-events-none"
+        style={{ width: '100%', height: '28px' }}
+      />
     </div>
   );
 };

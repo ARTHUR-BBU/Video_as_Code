@@ -68,6 +68,18 @@ export const RigidTimeline: React.FC<RigidTimelineProps> = ({
     return () => ro.disconnect();
   }, []);
 
+  // Expose zoom controls to window for automation benchmarks (WBS-1.5 DoD)
+  useEffect(() => {
+    (window as any).__VAC_SET_TIMELINE_ZOOM__ = (z: number) => {
+      setZoom(Math.max(50, Math.min(300, z)));
+    };
+    (window as any).__VAC_GET_TIMELINE_ZOOM__ = () => zoom;
+    return () => {
+      delete (window as any).__VAC_SET_TIMELINE_ZOOM__;
+      delete (window as any).__VAC_GET_TIMELINE_ZOOM__;
+    };
+  }, [zoom]);
+
   // Timecode formatter (HH:MM:SS:FF)
   const formatTimecode = (frame: number) => {
     const totalSeconds = Math.floor(frame / fps);

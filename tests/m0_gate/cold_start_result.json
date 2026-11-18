@@ -1,6 +1,6 @@
 {
   "testCaseId": "TC-NFR-7.1",
-  "timestamp": "2026-11-18T15:24:57.553Z",
+  "timestamp": "2026-11-18T15:53:27.723Z",
   "timingScope": {
     "browserTimingScope": "BROWSER_PREWARMED_VIEWPORT_FIRST_PAINT",
     "description": "Measures Vite dev server cold start through React viewport hydration and [data-testid=\"vac-canvas-ready\"] canvas interactive first paint, with pre-warmed Chrome browser instance."
@@ -11,8 +11,8 @@
     "os": "win32 x64"
   },
   "metrics": {
-    "coldStartMs": 1548,
-    "hotStartMs": 677,
+    "coldStartMs": 1395,
+    "hotStartMs": 610,
     "budgetMs": 2000,
     "passed": true
   },
@@ -20,15 +20,15 @@
     "cold": {
       "daemonPort": 9720,
       "viewportPort": 8848,
-      "serverReadyMs": 308,
-      "canvasInteractiveMs": 1240,
+      "serverReadyMs": 254,
+      "canvasInteractiveMs": 1141,
       "cacheStatus": "CLEANED_NO_CACHE"
     },
     "hot": {
       "daemonPort": 9720,
       "viewportPort": 8848,
-      "serverReadyMs": 44,
-      "canvasInteractiveMs": 633,
+      "serverReadyMs": 63,
+      "canvasInteractiveMs": 547,
       "cacheStatus": "VITE_CACHE_HIT"
     }
   }

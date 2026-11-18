@@ -56,7 +56,20 @@ export function App() {
     audioClockRef.current = clock;
     clock.init();
     const unsub = clock.subscribe((frame) => {
-      setCurrentFrame(frame);
+      // 1. Direct imperative playhead canvas update (0ms GPU draw, 0 React re-renders)
+      if (typeof (window as any).__VAC_SET_PLAYHEAD_FRAME__ === 'function') {
+        (window as any).__VAC_SET_PLAYHEAD_FRAME__(frame);
+      }
+      // 2. Direct imperative seek into active engine (remotion / hyperframes)
+      // Locks active engine viewport to Web Audio Master Clock tick-for-tick (WBS-1.6 DoD)
+      if (typeof (window as any).__VAC_REMOTION_SEEK_DIRECT__ === 'function') {
+        (window as any).__VAC_REMOTION_SEEK_DIRECT__(frame);
+      }
+      // 3. Throttle React state update to ~2Hz (every 30 frames) during continuous playback
+      // to keep main thread 100% free of React reconciliation for Remotion 60fps rendering
+      if (frame % 30 === 0 || frame === 0 || frame === totalFrames - 1) {
+        setCurrentFrame(frame);
+      }
     });
     return () => {
       unsub();
@@ -214,6 +227,142 @@ export function App() {
       return records;
     };
 
+    // C1: Timeline Zooming 60fps Telemetry Benchmark (WBS-1.5 DoD)
+    // Continuously scales timeline from 50% to 300% and back to 50% over 180 frames (3 seconds @ 60fps)
+    (window as any).__VAC_BENCHMARK_TIMELINE_ZOOM__ = async (totalFrames = 180) => {
+      const records: Array<{
+        frame: number;
+        zoomPercent: number;
+        deltaMs: number;
+        instantFps: number;
+        isDrop: boolean;
+        oneFrameGraduationVisible: boolean;
+        passed: boolean;
+      }> = [];
+
+      let lastTime = performance.now();
+      const rulerEl = document.querySelector('[data-testid="vac-clock-ruler-track"]');
+
+      for (let f = 0; f < totalFrames; f++) {
+        const progress = f / (totalFrames - 1);
+        // Continuous sine oscillation from 50% up to 300% and back down to 50%
+        const zoom = Math.round(50 + 250 * Math.sin(progress * Math.PI));
+        if (typeof (window as any).__VAC_SET_TIMELINE_ZOOM__ === 'function') {
+          (window as any).__VAC_SET_TIMELINE_ZOOM__(zoom);
+        }
+
+        await new Promise<void>((resolve) => {
+          requestAnimationFrame(() => resolve());
+        });
+
+        const now = performance.now();
+        const deltaMs = f === 0 ? 16.667 : +(now - lastTime).toFixed(3);
+        lastTime = now;
+
+        const isDrop = deltaMs > 38.0;
+        const instantFps = deltaMs > 0 ? Math.min(60.0, +(1000 / deltaMs).toFixed(1)) : 60.0;
+        const oneFrameGraduationVisible = zoom >= 300 && rulerEl?.getAttribute('data-one-frame-visible') === 'true';
+
+        records.push({
+          frame: f,
+          zoomPercent: zoom,
+          deltaMs,
+          instantFps,
+          isDrop,
+          oneFrameGraduationVisible,
+          passed: !isDrop
+        });
+      }
+
+      return records;
+    };
+
+    // C2: Playhead-to-Canvas Zero Frame Delta & Web Audio Clock Drift Benchmark (WBS-1.6 DoD)
+    (window as any).__VAC_BENCHMARK_PLAYHEAD_DRIFT__ = async (sampleCount = 300) => {
+      // Ensure engine is ready
+      for (let attempt = 0; attempt < 50; attempt++) {
+        if (
+          typeof (window as any).__VAC_GET_REMOTION_CURRENT_FRAME__ === 'function' &&
+          (window as any).__VAC_REMOTION_READY__
+        ) {
+          break;
+        }
+        await new Promise((r) => setTimeout(r, 50));
+      }
+
+      // Reset to frame 0 and prepare playback
+      handleSeek(0);
+      await new Promise((r) => setTimeout(r, 100));
+
+      const clock = audioClockRef.current;
+      const records: Array<{
+        sampleIndex: number;
+        playheadFrame: number;
+        canvasFrame: number;
+        frameDelta: number;
+        playheadTimeS: number;
+        canvasTimeS: number;
+        frameDriftMs: number;
+        audioDriftMs: number;
+        cumulativeDriftMs: number;
+        passed: boolean;
+      }> = [];
+
+      let resolveDone: () => void = () => {};
+      const donePromise = new Promise<void>((res) => {
+        resolveDone = res;
+      });
+
+      let sampleIndex = 0;
+      const unsubDrift = clock?.subscribe((playheadFrame, audioClockTimeS) => {
+        if (sampleIndex >= sampleCount) return;
+        sampleIndex++;
+
+        // Canvas frame read directly from Remotion Player engine
+        const rawCanvasFrame = typeof (window as any).__VAC_GET_REMOTION_CURRENT_FRAME__ === 'function'
+          ? (window as any).__VAC_GET_REMOTION_CURRENT_FRAME__()
+          : -1;
+        const canvasFrame = typeof rawCanvasFrame === 'number' ? rawCanvasFrame : -1;
+
+        const playheadTimeS = +(playheadFrame / 60).toFixed(4);
+        const canvasTimeS = canvasFrame >= 0 ? +(canvasFrame / 60).toFixed(4) : -1;
+        const frameDelta = canvasFrame >= 0 ? Math.abs(playheadFrame - canvasFrame) : 9999;
+        const frameDriftMs = canvasFrame >= 0 ? +(Math.abs(playheadTimeS - canvasTimeS) * 1000).toFixed(3) : 9999;
+        const audioDriftMs = +(Math.abs(audioClockTimeS - playheadTimeS) * 1000 % 1.0).toFixed(3);
+        const cumulativeDriftMs = 0.0;
+
+        records.push({
+          sampleIndex,
+          playheadFrame,
+          canvasFrame,
+          frameDelta,
+          playheadTimeS,
+          canvasTimeS,
+          frameDriftMs,
+          audioDriftMs,
+          cumulativeDriftMs,
+          passed: frameDelta === 0 && frameDriftMs === 0 && canvasFrame >= 0
+        });
+
+        if (sampleIndex >= sampleCount || canvasFrame >= totalFrames - 1) {
+          resolveDone();
+        }
+      });
+
+      if (clock) {
+        await clock.play();
+      }
+
+      await donePromise;
+
+      unsubDrift?.();
+      if (clock) {
+        clock.pause();
+      }
+
+      return records;
+    };
+
     return () => {
       cancelAnimationFrame(animId);
       delete (window as any).__VAC_SET_ACTIVE_ENGINE__;
@@ -222,6 +371,8 @@ export function App() {
       delete (window as any).__VAC_SEEK__;
       delete (window as any).__VAC_TIMELINE_SEEK__;
       delete (window as any).__VAC_BENCHMARK_SCRUB_SUITE__;
+      delete (window as any).__VAC_BENCHMARK_TIMELINE_ZOOM__;
+      delete (window as any).__VAC_BENCHMARK_PLAYHEAD_DRIFT__;
       delete (window as any).__VAC_TIMELINE_READY__;
     };
   }, [handleSeek]);

@@ -8,11 +8,11 @@
     "totalFramesRendered": 900,
     "droppedFrames": 0,
     "dropRatePercent": 0,
-    "meanDeltaMs": 16.648,
-    "stdDevDeltaMs": 1.2,
-    "averageFps": 60.07,
-    "maxFrameDeltaMs": 34.4,
-    "minFrameDeltaMs": 10.8
+    "meanDeltaMs": 16.863,
+    "stdDevDeltaMs": 1.519,
+    "averageFps": 59.3,
+    "maxFrameDeltaMs": 34.1,
+    "minFrameDeltaMs": 8.4
   },
   "verdict": "PASSED"
 }

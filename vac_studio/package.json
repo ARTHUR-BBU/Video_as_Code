@@ -13,7 +13,7 @@
     "server:dev": "npx tsx server/index.ts",
     "test:net": "npx tsx server/test_tc_net_01.ts",
     "test:m0": "npx tsx tests/run_m0_gate_suite.ts",
-    "test:m1": "npx tsx tests/measure_scrub_latency.ts"
+    "test:m1": "npx tsx tests/run_m1_gate_suite.ts"
   },
   "dependencies": {
     "@remotion/player": "^4.0.544",

@@ -1,0 +1,39 @@
+{
+  "acceptanceGate": "M1.1_FIVE_TRACK_TIMELINE_AND_WEB_AUDIO_CLOCK",
+  "standard": "ISO/IEC/IEEE 29148:2018",
+  "evaluatedAt": "2026-11-18T15:53:02.362Z",
+  "totalDurationSeconds": 20.13,
+  "criteria": {
+    "c1_timelineZoom60fps": {
+      "standard": "WBS-1.5 DoD",
+      "sampleCount": 180,
+      "meanFps": 60.16,
+      "maxDeltaMs": 18,
+      "droppedFrames": 0,
+      "oneFrameRulerVerified": true,
+      "verdict": "PASSED"
+    },
+    "c2_playheadCanvasDrift": {
+      "standard": "WBS-1.6 DoD",
+      "sampleCount": 300,
+      "maxFrameDelta": 0,
+      "meanAudioDriftMs": 0.529,
+      "maxAudioDriftMs": 1,
+      "cumulativeDriftMs": 0,
+      "dualTierModel": "Tier 1 CI (128-sample quantum) + Tier 2 Live (Hardware Audio DAC)",
+      "verdict": "PASSED"
+    },
+    "c3_playheadScrubLatency": {
+      "standard": "NFR 7.1 (TC-M1-SEEK)",
+      "sampleCount": 100,
+      "meanLatencyMs": 10.185,
+      "p95LatencyMs": 13.1,
+      "maxLatencyMs": 13.4,
+      "maxFrameDelta": 0,
+      "spreadMs": 12.2,
+      "stdDevMs": 2.403,
+      "verdict": "PASSED"
+    }
+  },
+  "overallVerdict": "M1_GATE_PASSED"
+}

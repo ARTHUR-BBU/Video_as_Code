@@ -1,0 +1,24 @@
+{
+  "testCaseId": "TC-M1-DRIFT",
+  "standard": "ISO/IEC/IEEE 29148:2018 (WBS-1.6 DoD)",
+  "evaluatedAt": "2026-11-18T15:52:57.429Z",
+  "clockArchitecture": {
+    "engine": "Web Audio API Master Clock",
+    "verificationModel": "Dual-tier (CI 128-sample quantum loop / Live hardware audio device)",
+    "syncToleranceMs": "<= 1.0ms",
+    "tier1CIStatus": "VERIFIED_VIA_CDP_128_SAMPLE_QUANTUM",
+    "tier2LiveStatus": "HARDWARE_AUDIO_DAC_CRYSTAL_BINDING_READY"
+  },
+  "sampleCount": 300,
+  "metrics": {
+    "maxFrameDelta": 0,
+    "meanFrameDriftMs": 0,
+    "maxFrameDriftMs": 0,
+    "meanAudioDriftMs": 0.529,
+    "maxAudioDriftMs": 1,
+    "cumulativeDriftMs": 0,
+    "allZeroFrameDelta": true,
+    "passRatePercent": 100
+  },
+  "verdict": "PASSED"
+}

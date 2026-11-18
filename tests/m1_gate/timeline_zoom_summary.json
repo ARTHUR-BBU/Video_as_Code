@@ -1,0 +1,20 @@
+{
+  "testCaseId": "TC-M1-ZOOM",
+  "standard": "ISO/IEC/IEEE 29148:2018 (WBS-1.5 DoD)",
+  "evaluatedAt": "2026-11-18T15:52:48.469Z",
+  "sampleCount": 180,
+  "zoomRange": {
+    "minPercent": 50,
+    "maxPercent": 300
+  },
+  "metrics": {
+    "minDeltaMs": 15.2,
+    "meanDeltaMs": 16.623,
+    "maxDeltaMs": 18,
+    "meanFps": 60.16,
+    "droppedFrames": 0,
+    "dropRatePercent": 0,
+    "oneFrameRulerVerified": true
+  },
+  "verdict": "PASSED"
+}
