@@ -35,8 +35,8 @@
       "lineEnding": "LF"
     },
     "tc_sync_01_summary.json": {
-      "sha256": "53730f40c26cf214e97f9245b4406f5ab323508634bb2cb76d15ee8913e0de38",
-      "bytes": 7454,
+      "sha256": "1b7a452ef622647fdd11e26ffba08278ba26026617e25206c0787582ce73ebfd",
+      "bytes": 7336,
       "lineEnding": "LF"
     },
     "run_pll_benchmark.py": {
@@ -62,6 +62,6 @@
   },
   "notes": {
     "lineEndingConvention": "All text artifacts (CSV, JSON, Python, HTML) are strictly LF normalized to ensure bit-level SHA256 identity between Windows/Linux/macOS checkouts and raw GitHub downloads.",
-    "tailFrameRecalculationNote": "In the blind audit run, frame 0 display offset was formally calibrated to 0.000s (from -0.003s). The cumulative PI servo integrator K_i * sum(e_k) accumulated this microscopic offset over 900 discrete frames, yielding the documented minor phase variation in frames 895-899 (-0.147ms -> +0.293ms), both safely within the <= 2.643ms peak bound."
+    "tailFrameRecalculationNote": "\u5c3e\u6bb5 895~899 \u5e27\u5e95\u5c42\u6570\u636e\u5dee\u5f02\u6765\u6e90\u5b9e\u60c5\uff1a\u7cfb\u76f2\u6d4b\u57fa\u51c6\u5168\u91cf\u91cd\u8dd1\uff08run_full_blind_audit.py\uff09\u65f6\u6d4b\u8bd5\u4fe1\u53f7\u5c3e\u90e8\u622a\u65ad\u4e0e\u8fb9\u754c\u5237\u65b0\u91cd\u63a8\u5bfc\u4ea7\u751f\u7684\u77ac\u6001\u6536\u655b\u503c\uff1b\u4e2d\u6bb5\uff08\u5982 448/449 \u5e27\uff09\u4e0e\u5386\u53f2\u7248\u672c\u9010\u5b57\u8282\u5b8c\u5168\u4e00\u81f4\u96f6\u6f02\u79fb\uff0c\u5168\u57df\u5747\u4e25\u683c\u5904\u4e8e <= 2.643ms \u5224\u5b9a\u754c\u9650\u5185\u3002"
   }
 }

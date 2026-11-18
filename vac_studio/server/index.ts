@@ -267,17 +267,19 @@ export class VacStudioDaemon {
         break;
 
       case 'timeline.mutateSceneDuration':
-        // PRD §5.1.1 Implementation Contract
+        // WBS-2.1 / M1 Implementation Target (Registered as explicit development stub)
         const { sceneId, newDurationInFrames } = params ?? {};
         ws.send(
           JSON.stringify({
             jsonrpc: '2.0',
             result: {
-              success: true,
+              status: 'STUB_NOT_IMPLEMENTED',
+              stub: true,
+              success: false,
               sceneId: sceneId ?? 'Scene01',
-              newDurationInFrames: newDurationInFrames ?? 285,
-              gitDiffLines: 1,
-              message: 'AST Patch computed and verified single-line diff.'
+              requestedDurationInFrames: newDurationInFrames ?? 285,
+              gitDiffLines: 0,
+              message: 'WBS-2.1 pending MotionIR AST engine integration. RPC endpoint registered as explicit stub.'
             },
             id
           })

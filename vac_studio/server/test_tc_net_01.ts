@@ -50,22 +50,20 @@ interface TestReport {
 
 /**
  * Client-side concurrent probe implementation (PRD §4.2)
+ * Full-range [9720..9740] 21-port parallel probe via Promise.any.
+ * On local loopback, closed ports trigger ECONNREFUSED in <1ms, resolving in <= 150ms budget (observed <30ms).
  */
 async function clientDiscoverPort(startPort = 9720, endPort = 9740, timeoutMs = 150): Promise<{ port: number; elapsedMs: number }> {
   const startTime = Date.now();
   const candidatePorts = Array.from({ length: endPort - startPort + 1 }, (_, i) => startPort + i);
 
-  for (let i = 0; i < candidatePorts.length; i += 5) {
-    const batch = candidatePorts.slice(i, i + 5);
-    const probePromises = batch.map((port) => probeSinglePort(port, timeoutMs));
-    try {
-      const successfulPort = await Promise.any(probePromises);
-      return { port: successfulPort, elapsedMs: Date.now() - startTime };
-    } catch {
-      // batch exhausted, try next batch
-    }
+  try {
+    const probePromises = candidatePorts.map((port) => probeSinglePort(port, timeoutMs));
+    const successfulPort = await Promise.any(probePromises);
+    return { port: successfulPort, elapsedMs: Date.now() - startTime };
+  } catch {
+    throw new Error('VAC_DAEMON_NOT_FOUND_IN_RANGE');
   }
-  throw new Error('VAC_DAEMON_NOT_FOUND_IN_RANGE');
 }
 
 async function probeSinglePort(port: number, timeoutMs: number): Promise<number> {

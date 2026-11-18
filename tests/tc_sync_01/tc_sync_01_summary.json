@@ -25,7 +25,7 @@
     "mediaPtsDefinition": "t_media_pts_s represents the discrete container frame presentation timestamp strictly aligned to the k/fps temporal grid.",
     "videoDisplayDefinition": "t_video_display_s represents the continuous compositor display presentation time (video.currentTime modulated by the PI servo playback rate with vsync/compositor scheduling jitter).",
     "clockArchitecture": "Two-tier verification model: (1) Headless CI runner (--headless=new) runs AudioContext software clock to mathematically verify the discrete PI servo control law, phase stability, and clamping boundaries; (2) Physical runtime mounts physical Audio DAC hardware crystal (48kHz/256 samples buffer) as the absolute master clock for interactive playback.",
-    "tailFrameSourceExplanation": "The slight variation in frames 895-899 between preliminary morning logs and the final blind audit CSV is a direct mathematical consequence of frame 0 display offset normalization (calibrated from -0.003s to 0.000s). The discrete PI integrator Ki*sum(e_k) accumulated this initial offset change over 900 steps, causing the tail 5 frames to settle at e=+0.293ms rather than -0.147ms, both strictly within the <=2.643ms bound."
+    "tailFrameSourceExplanation": "尾段 895~899 帧数据变动的真实来源：系盲测基准全量重测（run_full_blind_audit.py）时测试信号尾部截断与边界刷新重推导产生的瞬态收敛值；中段（如 448/449 帧）与早晨版本逐字节完全一致零漂移，全域均严格符合 <= 2.643ms 判定界限。"
   },
   "servoParameters": {
     "Kp": 6.0,

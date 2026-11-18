@@ -1,23 +1,23 @@
 {
   "testCaseId": "TC-NET-01",
-  "timestamp": "2026-11-18T03:04:12.573Z",
+  "timestamp": "2026-11-18T04:40:03.440Z",
   "environment": {
     "nodeVersion": "v22.22.2",
     "os": "win32 x64",
-    "pid": 14000
+    "pid": 18548
   },
   "scenarios": {
     "scenario1_baseline_9720": {
       "status": "PASSED",
       "boundPort": 9720,
-      "elapsedMs": 42,
+      "elapsedMs": 25,
       "handshakeHttpCode": 200
     },
     "scenario2_collision_fallback_9721": {
       "status": "PASSED",
       "simulatedConflictPort": 9720,
       "fallbackPort": 9721,
-      "detectionLatencyMs": 5,
+      "detectionLatencyMs": 3,
       "errorLogs": [
         "[VAC-PORT] Port 9720 is occupied, falling back to 9721..."
       ],
@@ -27,19 +27,19 @@
       "status": "PASSED",
       "probedRange": "9720..9740",
       "discoveredPort": 9721,
-      "discoveryElapsedMs": 21,
+      "discoveryElapsedMs": 25,
       "batchSize": 5,
       "withinBudget150ms": true
     },
     "scenario4_websocket_rpc_handshake": {
       "status": "PASSED",
       "wsEndpoint": "ws://127.0.0.1:9721/rpc",
-      "connectMs": 17,
-      "pingRttMs": 2,
-      "totalElapsedMs": 28,
+      "connectMs": 9,
+      "pingRttMs": 0,
+      "totalElapsedMs": 12,
       "handshakeResult": {
         "status": "ESTABLISHED",
-        "clientId": "client_1794971052867_88293",
+        "clientId": "client_1794976803657_e5r9t",
         "serverVersion": "1.0.0",
         "capabilities": [
           "ast-sync",
