@@ -4,8 +4,9 @@ import { BronzeVesselHero } from '../components/BronzeVesselHero';
 import { MuseumAssetCard } from '../components/MuseumAssetCard';
 import { TOKENS } from '../theme/tokens';
 
-export const Act2: React.FC = () => {
-  const frame = useCurrentFrame(); // 0 to 360 frames (corresponds to f270 - f630 in Film)
+export const Act2: React.FC<{ frameProp?: number }> = ({ frameProp }) => {
+  const remotionFrame = useCurrentFrame();
+  const frame = frameProp !== undefined ? frameProp : remotionFrame;
 
   // Camera transition to the cauldron's body & leg
   const scale = interpolate(frame, [0, 360], [1.7, 1.35], { extrapolateRight: 'clamp' });
@@ -39,13 +40,10 @@ export const Act2: React.FC = () => {
       style={{
         position: 'absolute',
         inset: 0,
-        backgroundColor: TOKENS.ground,
         opacity: enterOpacity * exitOpacity,
+        willChange: 'opacity',
       }}
     >
-      {/* Real Museum Artifact Macro View */}
-      <BronzeVesselHero scale={scale} panX={panX} panY={panY} />
-
       {/* Subtle Museum Scrim */}
       <div
         style={{

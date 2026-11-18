@@ -21,11 +21,10 @@ import {
 import { DaemonDiscovery, DiscoveryResult } from './client/bootstrap';
 import { VacRpcClient, ConnectionState } from './client/ws_client';
 
+import { HyperFramesHost } from './components/stage/HyperFramesHost';
+
 const RemotionHost = lazy(() =>
   import('./components/stage/RemotionHost').then((m) => ({ default: m.RemotionHost }))
-);
-const HyperFramesHost = lazy(() =>
-  import('./components/stage/HyperFramesHost').then((m) => ({ default: m.HyperFramesHost }))
 );
 
 export function App() {
@@ -41,7 +40,12 @@ export function App() {
   const [currentFrame, setCurrentFrame] = useState(128);
   const totalFrames = 900;
   const fps = 60;
-  const [activeEngine, setActiveEngine] = useState<'remotion' | 'hyperframes' | 'motion2code'>('remotion');
+  const queryEngine = typeof window !== 'undefined'
+    ? (new URLSearchParams(window.location.search).get('engine') as 'remotion' | 'hyperframes' | 'motion2code' | null)
+    : null;
+  const [activeEngine, setActiveEngine] = useState<'remotion' | 'hyperframes' | 'motion2code'>(
+    queryEngine === 'hyperframes' || queryEngine === 'motion2code' ? queryEngine : 'remotion'
+  );
   const [engineReady, setEngineReady] = useState(false);
   const [activeTab, setActiveTab] = useState<'armory' | 'templates' | 'sounds'>('armory');
   const [showSafeGuides, setShowSafeGuides] = useState(true);
@@ -49,8 +53,28 @@ export function App() {
 
   // Mount engine runner on next tick past first paint
   useEffect(() => {
+    (window as any).__VAC_STUDIO_READY__ = true;
     const animId = requestAnimationFrame(() => setEngineReady(true));
-    return () => cancelAnimationFrame(animId);
+    (window as any).__VAC_SET_ACTIVE_ENGINE__ = (engine: 'remotion' | 'hyperframes' | 'motion2code') => {
+      setActiveEngine(engine);
+    };
+    (window as any).__VAC_PLAY__ = () => {
+      setCurrentFrame(0);
+      setIsPlaying(true);
+    };
+    (window as any).__VAC_PAUSE__ = () => {
+      setIsPlaying(false);
+    };
+    (window as any).__VAC_SEEK__ = (frame: number) => {
+      setCurrentFrame(frame);
+    };
+    return () => {
+      cancelAnimationFrame(animId);
+      delete (window as any).__VAC_SET_ACTIVE_ENGINE__;
+      delete (window as any).__VAC_PLAY__;
+      delete (window as any).__VAC_PAUSE__;
+      delete (window as any).__VAC_SEEK__;
+    };
   }, []);
 
   // Discovery Routine

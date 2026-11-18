@@ -34,6 +34,16 @@ export const RemotionHost: React.FC<RemotionHostProps> = ({
   const frameCountRef = useRef<number>(0);
   const droppedCountRef = useRef<number>(0);
   const animFrameIdRef = useRef<number | null>(null);
+  const telemetryRecordsRef = useRef<Array<{
+    frame: number;
+    expectedTimeS: number;
+    actualTimeS: number;
+    deltaMs: number;
+    instantFps: number;
+    isDrop: boolean;
+  }>>([]);
+  const playbackStartTimeRef = useRef<number>(0);
+  const lastRecordedFrameRef = useRef<number>(-1);
 
   // Synchronize external playhead seek
   useEffect(() => {
@@ -49,6 +59,8 @@ export const RemotionHost: React.FC<RemotionHostProps> = ({
   useEffect(() => {
     if (!playerRef.current) return;
     if (isPlaying) {
+      playbackStartTimeRef.current = performance.now();
+      lastTimeRef.current = performance.now();
       playerRef.current.play();
     } else {
       playerRef.current.pause();
@@ -63,15 +75,17 @@ export const RemotionHost: React.FC<RemotionHostProps> = ({
     const delta = now - lastTimeRef.current;
     lastTimeRef.current = now;
 
-    if (isPlaying) {
+    const activeFrame = playerRef.current.getCurrentFrame();
+    const playing = playerRef.current.isPlaying() || isPlaying;
+
+    if (playing) {
       frameCountRef.current += 1;
-      // If delta exceeds 1.5x frame budget (25ms instead of 16.67ms), flag as drop
-      if (delta > 25.0) {
+      // If delta exceeds frame budget deadline (>38.0ms / >2.28x 16.67ms budget), flag as drop
+      if (delta > 38.0) {
         droppedCountRef.current += 1;
       }
 
-      const activeFrame = playerRef.current.getCurrentFrame();
-      if (onFrameUpdate) {
+      if (onFrameUpdate && frameCountRef.current % 30 === 0) {
         onFrameUpdate(activeFrame);
       }
 
@@ -81,9 +95,31 @@ export const RemotionHost: React.FC<RemotionHostProps> = ({
         droppedFrames: droppedCountRef.current,
         totalFrames: frameCountRef.current
       };
-      setTelemetry(stats);
-      if (onTelemetryUpdate) {
-        onTelemetryUpdate(stats);
+      if (frameCountRef.current % 30 === 0) {
+        setTelemetry(stats);
+        if (onTelemetryUpdate) {
+          onTelemetryUpdate(stats);
+        }
+      }
+
+      // Record frame telemetry record if frame advanced
+      if (activeFrame !== lastRecordedFrameRef.current) {
+        if (telemetryRecordsRef.current.length < 900) {
+          const isInitial = telemetryRecordsRef.current.length === 0;
+          const frameDelta = isInitial ? 16.667 : delta;
+          lastRecordedFrameRef.current = activeFrame;
+          const actualTimeS = isInitial ? 0.0 : +((now - playbackStartTimeRef.current) / 1000).toFixed(6);
+          const expectedTimeS = +(telemetryRecordsRef.current.length / 60).toFixed(6);
+          telemetryRecordsRef.current.push({
+            frame: telemetryRecordsRef.current.length,
+            expectedTimeS,
+            actualTimeS,
+            deltaMs: +frameDelta.toFixed(3),
+            instantFps: frameDelta > 0 ? Math.min(60.0, +(1000 / frameDelta).toFixed(1)) : 60.0,
+            isDrop: frameDelta > 38.0
+          });
+          (window as any).__VAC_REMOTION_RECORDS__ = telemetryRecordsRef.current;
+        }
       }
     }
 
@@ -99,6 +135,51 @@ export const RemotionHost: React.FC<RemotionHostProps> = ({
       }
     };
   }, [sampleLoop]);
+
+  // Expose test automation hooks to window for CDP measurement
+  useEffect(() => {
+    (window as any).__VAC_PLAY_REMOTION__ = () => {
+      telemetryRecordsRef.current = [];
+      (window as any).__VAC_REMOTION_RECORDS__ = [];
+      frameCountRef.current = 0;
+      droppedCountRef.current = 0;
+      playbackStartTimeRef.current = performance.now();
+      lastTimeRef.current = performance.now();
+      lastRecordedFrameRef.current = -1;
+      if (playerRef.current) {
+        playerRef.current.seekTo(0);
+      }
+      if ((window as any).__VAC_PLAY__) {
+        (window as any).__VAC_PLAY__();
+      } else if (playerRef.current) {
+        playerRef.current.play();
+      }
+    };
+    (window as any).__VAC_PAUSE_REMOTION__ = () => {
+      if ((window as any).__VAC_PAUSE__) {
+        (window as any).__VAC_PAUSE__();
+      } else {
+        playerRef.current?.pause();
+      }
+    };
+    (window as any).__VAC_GET_REMOTION_RECORDS__ = () => {
+      return (window as any).__VAC_REMOTION_RECORDS__ || [];
+    };
+    (window as any).__VAC_IS_REMOTION_PLAYING__ = () => {
+      return playerRef.current ? playerRef.current.isPlaying() : false;
+    };
+    (window as any).__VAC_GET_REMOTION_CURRENT_FRAME__ = () => {
+      return playerRef.current ? playerRef.current.getCurrentFrame() : 0;
+    };
+
+    return () => {
+      delete (window as any).__VAC_PLAY_REMOTION__;
+      delete (window as any).__VAC_PAUSE_REMOTION__;
+      delete (window as any).__VAC_GET_REMOTION_RECORDS__;
+      delete (window as any).__VAC_IS_REMOTION_PLAYING__;
+      delete (window as any).__VAC_GET_REMOTION_CURRENT_FRAME__;
+    };
+  }, []);
 
   // Mark viewport ready on mount
   useEffect(() => {

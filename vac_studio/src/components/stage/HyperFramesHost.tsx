@@ -30,9 +30,12 @@ export const HyperFramesHost: React.FC<HyperFramesHostProps> = ({
     }
   }, [currentFrame]);
 
-  // Handle incoming ACK from iframe
+  // Handle incoming ACK from iframe and ready handshake
   useEffect(() => {
     const handleMessage = (e: MessageEvent) => {
+      if (e.data && e.data.type === 'VAC_HYPERFRAMES_READY') {
+        (window as any).__VAC_HYPERFRAMES_READY__ = true;
+      }
       if (e.data && e.data.type === 'VAC_SEEK_ACK') {
         setLastAckFrame(e.data.frame);
         if (e.data.renderLatencyMs !== undefined) {
@@ -43,6 +46,81 @@ export const HyperFramesHost: React.FC<HyperFramesHostProps> = ({
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  // Expose real postMessage seek harness to window for CDP / automated testing
+  useEffect(() => {
+    (window as any).__VAC_HYPERFRAMES_SEEK__ = (targetFrame: number, fps = 60) => {
+      return new Promise<{
+        targetFrame: number;
+        expectedTimeS: number;
+        ackFrame: number;
+        frameDelta: number;
+        renderLatencyMs: number;
+        status: 'PASS' | 'FAIL';
+      }>((resolve, reject) => {
+        const tStart = performance.now();
+        let resolved = false;
+
+        const onAck = (e: MessageEvent) => {
+          if (e.data && e.data.type === 'VAC_SEEK_ACK') {
+            if (resolved) return;
+            resolved = true;
+            window.removeEventListener('message', onAck);
+            const ackFrame = Number(e.data.frame);
+            const frameDelta = Math.abs(ackFrame - targetFrame);
+            const roundTripLatencyMs = performance.now() - tStart;
+            resolve({
+              targetFrame,
+              expectedTimeS: +(targetFrame / fps).toFixed(4),
+              ackFrame,
+              frameDelta,
+              renderLatencyMs: +(e.data.renderLatencyMs ?? roundTripLatencyMs).toFixed(2),
+              status: frameDelta === 0 ? 'PASS' : 'FAIL'
+            });
+          }
+        };
+
+        window.addEventListener('message', onAck);
+
+        const sendSeek = () => {
+          if (iframeRef.current && iframeRef.current.contentWindow) {
+            iframeRef.current.contentWindow.postMessage(
+              {
+                type: 'VAC_SEEK',
+                frame: targetFrame,
+                time: targetFrame / fps,
+                fps
+              },
+              '*'
+            );
+          }
+        };
+
+        sendSeek();
+
+        // Retry if iframe was busy during initial handshake
+        const retryTimer = setInterval(() => {
+          if (resolved) {
+            clearInterval(retryTimer);
+            return;
+          }
+          sendSeek();
+        }, 120);
+
+        setTimeout(() => {
+          clearInterval(retryTimer);
+          if (!resolved) {
+            window.removeEventListener('message', onAck);
+            reject(new Error(`SEEK_TIMEOUT: No ACK for frame ${targetFrame} within 6000ms`));
+          }
+        }, 6000);
+      });
+    };
+    return () => {
+      delete (window as any).__VAC_HYPERFRAMES_SEEK__;
+      delete (window as any).__VAC_HYPERFRAMES_READY__;
+    };
   }, []);
 
   // Continuous playback tick when playing
@@ -76,6 +154,9 @@ export const HyperFramesHost: React.FC<HyperFramesHostProps> = ({
         src="/compositions/space_bunny/index.html"
         title="HyperFrames Space Bunny Replica"
         sandbox="allow-scripts allow-same-origin"
+        onLoad={() => {
+          (window as any).__VAC_HYPERFRAMES_READY__ = true;
+        }}
         className="w-full h-full border-0 pointer-events-auto"
         style={{
           width: '100%',

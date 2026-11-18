@@ -30,13 +30,15 @@ export const BronzeVesselHero: React.FC<BronzeVesselHeroProps> = ({
       <img
         src={staticFile('assets/ritual-tripod-cauldron-with-cover-ding.jpg')}
         alt="Ritual Tripod Cauldron with Cover (Ding), 5th-4th century BCE, The Metropolitan Museum of Art"
+        decoding="async"
+        loading="eager"
         style={{
           width: '100%',
           height: '100%',
           objectFit: 'contain',
-          transform: `translate(${panX}px, ${panY}px) scale(${scale})`,
+          transform: `translate3d(${panX}px, ${panY}px, 0) scale(${scale})`,
           transformOrigin: 'center center',
-          filter: 'contrast(1.08) brightness(1.02)',
+          willChange: 'transform',
         }}
       />
     </div>

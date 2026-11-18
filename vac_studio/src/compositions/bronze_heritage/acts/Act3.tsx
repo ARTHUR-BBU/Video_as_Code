@@ -3,8 +3,9 @@ import { interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import { BronzeVesselHero } from '../components/BronzeVesselHero';
 import { TOKENS } from '../theme/tokens';
 
-export const Act3: React.FC = () => {
-  const frame = useCurrentFrame(); // 0 to 270 frames (corresponds to f630 - f900 in Film)
+export const Act3: React.FC<{ frameProp?: number }> = ({ frameProp }) => {
+  const remotionFrame = useCurrentFrame();
+  const frame = frameProp !== undefined ? frameProp : remotionFrame;
   const { fps } = useVideoConfig();
 
   // Wide camera view with subtle living hold micro-drift (0.35px/f, strictly obeying HB18)
@@ -26,14 +27,11 @@ export const Act3: React.FC = () => {
       style={{
         position: 'absolute',
         inset: 0,
-        backgroundColor: TOKENS.ground,
         opacity: enterOpacity,
         overflow: 'hidden',
+        willChange: 'opacity',
       }}
     >
-      {/* Real Full Vessel Silhouette View */}
-      <BronzeVesselHero scale={scale} panX={0} panY={panY} />
-
       {/* Subtle Dark Vignette & Floor Grounding */}
       <div
         style={{
@@ -68,7 +66,6 @@ export const Act3: React.FC = () => {
             color: TOKENS.gold,
             marginBottom: 8,
             transform: `scale(${titleScale})`,
-            textShadow: '0 4px 24px rgba(0,0,0,0.8)',
           }}
         >
           吉金永固

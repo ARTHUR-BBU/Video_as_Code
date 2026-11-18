@@ -6,8 +6,14 @@
  * 2. Vite Frontend SPA Server (Interactive Viewport on Port 8848)
  */
 
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createServer, optimizeDeps, ViteDevServer } from 'vite';
 import { VacStudioDaemon } from './index.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const studioDir = path.resolve(__dirname, '..');
 
 export interface StudioInstance {
   daemon: VacStudioDaemon;
@@ -32,10 +38,28 @@ export async function launchStudio(options: { daemonStartPort?: number; viewport
   const [daemonInfo, vite] = await Promise.all([
     daemon.start({ startPort: daemonStartPort, endPort: 9740 }),
     createServer({
+      configFile: false,
+      root: studioDir,
       server: {
         port: viewportPort,
         strictPort: false,
         host: '127.0.0.1'
+      },
+      esbuild: {
+        jsx: 'automatic'
+      },
+      optimizeDeps: {
+        noDiscovery: true,
+        holdUntilCrawlEnd: false,
+        include: [
+          'react',
+          'react-dom',
+          'react-dom/client',
+          'react/jsx-runtime',
+          'react/jsx-dev-runtime',
+          'clsx',
+          'tailwind-merge'
+        ]
       }
     }).then(async (v) => {
       await v.listen();

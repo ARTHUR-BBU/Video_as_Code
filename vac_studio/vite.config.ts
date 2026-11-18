@@ -4,7 +4,10 @@ export default defineConfig({
   server: {
     host: '127.0.0.1',
     port: 8848,
-    strictPort: false
+    strictPort: false,
+    warmup: {
+      clientFiles: ['./src/main.tsx', './src/App.tsx']
+    }
   },
   esbuild: {
     jsx: 'automatic'

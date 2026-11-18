@@ -3,8 +3,9 @@ import { interpolate, useCurrentFrame } from 'remotion';
 import { BronzeVesselHero } from '../components/BronzeVesselHero';
 import { TOKENS } from '../theme/tokens';
 
-export const Act1: React.FC = () => {
-  const frame = useCurrentFrame(); // 0 to 270 frames (4.5s)
+export const Act1: React.FC<{ frameProp?: number }> = ({ frameProp }) => {
+  const remotionFrame = useCurrentFrame();
+  const frame = frameProp !== undefined ? frameProp : remotionFrame;
 
   // Macro camera pan across the intricate dragon relief on the lid
   const scale = interpolate(frame, [0, 270], [2.4, 1.85], { extrapolateRight: 'clamp' });
@@ -29,10 +30,7 @@ export const Act1: React.FC = () => {
   const exitOpacity = interpolate(frame, [250, 270], [1, 0], { extrapolateLeft: 'clamp' });
 
   return (
-    <div style={{ position: 'absolute', inset: 0, backgroundColor: TOKENS.ground, opacity: exitOpacity }}>
-      {/* Real Museum Artifact Macro View */}
-      <BronzeVesselHero scale={scale} panX={panX} panY={panY} />
-
+    <div style={{ position: 'absolute', inset: 0, opacity: exitOpacity, willChange: 'opacity' }}>
       {/* Subtle Museum Scrim (taste-skill rule: neutral scrim over photo is permitted) */}
       <div
         style={{
@@ -63,6 +61,7 @@ export const Act1: React.FC = () => {
               lineHeight: 1.05,
               opacity: frag1Opacity,
               transform: `translateY(${frag1Y}px)`,
+              willChange: 'opacity, transform',
             }}
           >
             Three thousand years.
@@ -79,6 +78,7 @@ export const Act1: React.FC = () => {
               opacity: frag2Opacity,
               transform: `translateY(${frag2Y}px)`,
               color: TOKENS.gold,
+              willChange: 'opacity, transform',
             }}
           >
             Cast in bronze.

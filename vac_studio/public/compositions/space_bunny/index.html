@@ -1029,6 +1029,8 @@
     // --- Deterministic Timeline Renderer ---
     window.renderAtTime = function(t) {
       t = Math.max(0, Math.min(t, TOTAL_DURATION));
+      window.__CURRENT_RENDER_TIME__ = t;
+      window.__CURRENT_RENDER_FRAME__ = Math.round(t * 60);
 
       // Reset visibilities
       launchpad.visible = false;
@@ -1280,18 +1282,27 @@
         window.renderAtTime(targetTime);
         const renderLatencyMs = performance.now() - t0;
         
+        // Read back actual rendered state directly from 3D/timeline engine state (no echo cheat)
+        const actualRenderedFrame = window.__CURRENT_RENDER_FRAME__;
+        const actualRenderedTime = window.__CURRENT_RENDER_TIME__;
+
         // Notify parent viewport
         if (window.parent && window.parent !== window) {
           window.parent.postMessage({
             type: 'VAC_SEEK_ACK',
-            frame: frame,
-            time: targetTime,
+            frame: actualRenderedFrame,
+            time: actualRenderedTime,
             renderLatencyMs: renderLatencyMs,
             status: 'SUCCESS'
           }, '*');
         }
       }
     });
+
+    // Notify parent host that HyperFrames 3D/GSAP engine is ready
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ type: 'VAC_HYPERFRAMES_READY' }, '*');
+    }
   </script>
 </body>
 </html>

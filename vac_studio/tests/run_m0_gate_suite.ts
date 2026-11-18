@@ -57,9 +57,11 @@ async function runM0MasterSuite() {
 
   // 1. Run Cold/Hot Start Benchmark
   const coldRep: ColdStartReport = await runColdStartBenchmark();
+  await new Promise((r) => setTimeout(r, 1200));
 
   // 2. Run Bronze Heritage 60fps Zero-Drop Telemetry
   const bronzeRep: BronzeTelemetrySummary = await runBronzeFpsBenchmark();
+  await new Promise((r) => setTimeout(r, 1200));
 
   // 3. Run HyperFrames Deterministic Seek
   const seekRep: HyperFramesSeekReport = await runHyperFramesSeekTest();

@@ -15,6 +15,10 @@ import { launchStudio, StudioInstance } from '../server/studio_launcher.js';
 interface ColdStartReport {
   testCaseId: 'TC-NFR-7.1';
   timestamp: string;
+  timingScope: {
+    browserTimingScope: 'BROWSER_PREWARMED_VIEWPORT_FIRST_PAINT';
+    description: string;
+  };
   environment: {
     nodeVersion: string;
     chromeVersion: string;
@@ -58,14 +62,21 @@ class ChromeHarness {
       '--no-proxy-server',
       '--proxy-server=direct://',
       '--proxy-bypass-list=*',
-      '--disable-gpu',
       '--no-first-run',
       '--disable-background-timer-throttling',
       '--disable-renderer-backgrounding',
+      '--disable-backgrounding-occluded-windows',
       '--disable-extensions',
       '--disable-sync',
       '--disable-default-apps',
       '--mute-audio',
+      '--enable-gpu-rasterization',
+      '--enable-zero-copy',
+      '--ignore-gpu-blocklist',
+      '--use-gl=angle',
+      '--use-angle=d3d11',
+      '--in-process-gpu',
+      '--window-size=1920,1080',
       'about:blank'
     ]);
   }
@@ -106,9 +117,17 @@ class ChromeHarness {
 
     let reqId = 100;
     return new Promise<number>((resolve, reject) => {
+      let msgHandler: ((raw: any) => void) | null = null;
+      const cleanup = () => {
+        clearInterval(interval);
+        if (msgHandler && this.ws) {
+          this.ws.off('message', msgHandler);
+        }
+      };
+
       const interval = setInterval(() => {
         if (performance.now() - start > timeoutMs) {
-          clearInterval(interval);
+          cleanup();
           reject(new Error('CANVAS_READY_TIMEOUT'));
           return;
         }
@@ -123,15 +142,19 @@ class ChromeHarness {
             }
           })
         );
-      }, 5);
+      }, 15);
 
-      this.ws!.on('message', (raw) => {
-        const msg = JSON.parse(raw.toString());
-        if (msg.result && msg.result.result && msg.result.result.value === true) {
-          clearInterval(interval);
-          resolve(Math.round(performance.now() - start));
-        }
-      });
+      msgHandler = (raw: any) => {
+        try {
+          const msg = JSON.parse(raw.toString());
+          if (msg.result && msg.result.result && msg.result.result.value === true) {
+            cleanup();
+            resolve(Math.round(performance.now() - start));
+          }
+        } catch {}
+      };
+
+      this.ws!.on('message', msgHandler);
     });
   }
 
@@ -149,7 +172,9 @@ export async function runColdStartBenchmark(): Promise<ColdStartReport> {
   console.log('Budget: <= 2000ms | Browser: Chrome 157 (Headless) | Target: 8848');
   console.log('='.repeat(80));
 
-  const viteCacheDir = path.join(process.cwd(), 'node_modules', '.vite');
+  const viteCacheDir = fs.existsSync(path.join(process.cwd(), 'node_modules', '.vite'))
+    ? path.join(process.cwd(), 'node_modules', '.vite')
+    : path.resolve(process.cwd(), 'vac_studio', 'node_modules', '.vite');
 
   // Pre-connect Chrome harness
   const harness1 = new ChromeHarness(9225);
@@ -199,6 +224,10 @@ export async function runColdStartBenchmark(): Promise<ColdStartReport> {
   const report: ColdStartReport = {
     testCaseId: 'TC-NFR-7.1',
     timestamp: new Date().toISOString(),
+    timingScope: {
+      browserTimingScope: 'BROWSER_PREWARMED_VIEWPORT_FIRST_PAINT',
+      description: 'Measures Vite dev server cold start through React viewport hydration and [data-testid="vac-canvas-ready"] canvas interactive first paint, with pre-warmed Chrome browser instance.'
+    },
     environment: {
       nodeVersion: process.version,
       chromeVersion: 'Chrome 157.0.8103.79',
