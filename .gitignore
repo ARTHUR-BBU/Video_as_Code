@@ -18,6 +18,7 @@ node_modules/
 .remotion/
 .cache/
 .taste-skill/
+.vac/
 dist/
 build/
 .next/

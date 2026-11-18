@@ -1,0 +1,15 @@
+# Video-as-Code Git Attributes
+# Force LF normalization across all environments to guarantee cross-platform SHA-256 consistency
+* text=auto eol=lf
+*.csv text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.py text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.mp4 binary
+*.wav binary
+*.png binary

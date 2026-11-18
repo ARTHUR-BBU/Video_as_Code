@@ -6,47 +6,62 @@
   "artifacts": {
     "sync_test_1080p60_15s.mp4": {
       "sha256": "5ab5f03a8776ed4dbafd6868e4377672d4a295cc9dc73ff1a57ce397b39cea76",
-      "bytes": 2686869
+      "bytes": 2686869,
+      "lineEnding": "BINARY"
     },
     "sync_test_complex_gop24_24fps_15s.mp4": {
       "sha256": "0b13978838938859f48310927eff95443948816ca1c34eb13618b243cc280ff5",
-      "bytes": 18691104
+      "bytes": 18691104,
+      "lineEnding": "BINARY"
     },
     "sync_test_broadcast_gop6_30fps_15s.mp4": {
       "sha256": "e37c5f9179dd92207035f04059658e99bdd73061bd18f0bb5ad0cf27d08acd90",
-      "bytes": 1572966
+      "bytes": 1572966,
+      "lineEnding": "BINARY"
     },
     "tc_sync_01_telemetry_900f.csv": {
-      "sha256": "36926ce1c471e56daf6d08cf6e89027ea2bd627771d5858db22822543f88f1d1",
-      "bytes": 56165
+      "sha256": "dc7ddc170816595dc84fcbf7dc019f33ac822af6694f41caef1cb3ef3a9c5210",
+      "bytes": 55264,
+      "lineEnding": "LF"
     },
     "tc_sync_01_telemetry_asset_b_360f.csv": {
-      "sha256": "216c3521de48bab07b39dc4caa8b88b5e1558278740727f0a7f39fd6a64d929e",
-      "bytes": 22518
+      "sha256": "78cfab43cd9c351daf5be892dc73ea39c20c2d235328c96d069f4d3bc8b1aef4",
+      "bytes": 22157,
+      "lineEnding": "LF"
     },
     "tc_sync_01_telemetry_asset_c_450f.csv": {
-      "sha256": "96c8cfc4a3ffb0d51cbd4edba565149873348ed35ebb14b7936a9a02be4e1098",
-      "bytes": 27939
+      "sha256": "3433bdf35b96ccdc321c8448ca0276b5ff1aed0e5c222483160610edde354fb3",
+      "bytes": 27488,
+      "lineEnding": "LF"
     },
     "tc_sync_01_summary.json": {
-      "sha256": "e890bcd58ba16745d1635303d7ebfa4e223d7fa7c5bcb673b13f1ecddf4a1496",
-      "bytes": 6786
+      "sha256": "75cec580d244c3fe30e0b4f7fa920009f6db97c52e200885ff8b0950a2a81da6",
+      "bytes": 6592,
+      "lineEnding": "LF"
     },
     "run_pll_benchmark.py": {
       "sha256": "c61997c4c939996731917ae32b07bf7a5cc3b19e647a55a0cd0ac400db934cee",
-      "bytes": 7247
+      "bytes": 7247,
+      "lineEnding": "LF"
     },
     "run_full_blind_audit.py": {
       "sha256": "88dfa26289167dde685b79baa1aaaa9147cd3e34565fadd9822dfa28360c5a38",
-      "bytes": 21239
+      "bytes": 21239,
+      "lineEnding": "LF"
     },
     "create_blind_test_assets.py": {
       "sha256": "9651b960e7d0e55ce4c0e316e3605d0e5a3ff53fd1534eb29ca3be97c9e07087",
-      "bytes": 3511
+      "bytes": 3511,
+      "lineEnding": "LF"
     },
     "harness.html": {
       "sha256": "e221351dee803bf7785267f6510b818feb89e0c778b582bee4a84189078c3b57",
-      "bytes": 9265
+      "bytes": 9265,
+      "lineEnding": "LF"
     }
+  },
+  "notes": {
+    "lineEndingConvention": "All text artifacts (CSV, JSON, Python, HTML) are strictly LF normalized to ensure bit-level SHA256 identity between Windows/Linux/macOS checkouts and raw GitHub downloads.",
+    "tailFrameRecalculationNote": "In the blind audit run, frame 0 display offset was formally calibrated to 0.000s (from -0.003s). The cumulative PI servo integrator K_i * sum(e_k) accumulated this microscopic offset over 900 discrete frames, yielding the documented minor phase variation in frames 895-899 (-0.147ms -> +0.293ms), both safely within the <= 2.643ms peak bound."
   }
 }

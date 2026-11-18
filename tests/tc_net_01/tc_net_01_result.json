@@ -1,0 +1,55 @@
+{
+  "testCaseId": "TC-NET-01",
+  "timestamp": "2026-11-18T03:04:12.573Z",
+  "environment": {
+    "nodeVersion": "v22.22.2",
+    "os": "win32 x64",
+    "pid": 14000
+  },
+  "scenarios": {
+    "scenario1_baseline_9720": {
+      "status": "PASSED",
+      "boundPort": 9720,
+      "elapsedMs": 42,
+      "handshakeHttpCode": 200
+    },
+    "scenario2_collision_fallback_9721": {
+      "status": "PASSED",
+      "simulatedConflictPort": 9720,
+      "fallbackPort": 9721,
+      "detectionLatencyMs": 5,
+      "errorLogs": [
+        "[VAC-PORT] Port 9720 is occupied, falling back to 9721..."
+      ],
+      "handshakeHttpCode": 200
+    },
+    "scenario3_client_concurrent_probe": {
+      "status": "PASSED",
+      "probedRange": "9720..9740",
+      "discoveredPort": 9721,
+      "discoveryElapsedMs": 21,
+      "batchSize": 5,
+      "withinBudget150ms": true
+    },
+    "scenario4_websocket_rpc_handshake": {
+      "status": "PASSED",
+      "wsEndpoint": "ws://127.0.0.1:9721/rpc",
+      "connectMs": 17,
+      "pingRttMs": 2,
+      "totalElapsedMs": 28,
+      "handshakeResult": {
+        "status": "ESTABLISHED",
+        "clientId": "client_1794971052867_88293",
+        "serverVersion": "1.0.0",
+        "capabilities": [
+          "ast-sync",
+          "diff-view",
+          "telemetry-hud",
+          "earshot-mix"
+        ]
+      },
+      "pingPongResult": "pong"
+    }
+  },
+  "finalVerdict": "TC_NET_01_PASSED"
+}
