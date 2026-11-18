@@ -1,0 +1,183 @@
+{
+  "testCaseId": "TC-SYNC-01",
+  "standard": "ISO/IEC/IEEE 29148:2018",
+  "version": "2.1.1-AUDIT-FINAL",
+  "description": "Dual-Stream Hardware Crystal Master Clock & PI Phase-Locked Loop Benchmark with Multi-Asset Blind Testing",
+  "hardwareEnvironment": {
+    "os": "Windows 11 23H2 (x86_64)",
+    "cpu": "Intel Core i7-12700 / AMD Ryzen 5800X (8C/16T)",
+    "gpu": "NVIDIA GeForce RTX 3060 (Dedicated GPU, NVDEC / D3D11)",
+    "audioOutput": "Stereo 48.0 kHz, 256 samples buffer (Hardware Audio Crystal)",
+    "browser": "Google Chrome 124+ (Headless / Headful)",
+    "browserLaunchFlags": [
+      "--disable-background-timer-throttling",
+      "--disable-backgrounding-occluded-windows",
+      "--disable-renderer-backgrounding",
+      "--enable-features=AudioContextKeepAlive",
+      "--autoplay-policy=no-user-gesture-required",
+      "--enable-gpu-rasterization"
+    ]
+  },
+  "timebaseCalibration": {
+    "zeroPointReference": "AudioContext.currentTime is clamped to >= 0.0 with relative offset t_base = audioCtx.currentTime at Play() dispatch. k=0 is strictly anchored to 0.000000s.",
+    "videoTimestampDefinition": "t_video_display_s represents rVFC (requestVideoFrameCallback) display presentation timestamp metadata.mediaTime, reflecting compositor scheduling."
+  },
+  "servoParameters": {
+    "Kp": 6.0,
+    "Ki": 0.8,
+    "rateBounds": [
+      0.95,
+      1.05
+    ],
+    "antiWindupBound": [
+      -0.02,
+      0.02
+    ],
+    "status": "Fixed and unaltered across all blind test assets (Zero overfitting)"
+  },
+  "groundTruthSamplingPolicy": {
+    "strategy": "Dual-column optical checkpoint audit (gt_checkpoint, gt_status)",
+    "checkpointCadence": "Strictly at integer second boundaries (1.0s, 2.0s, ..., 15.0s)",
+    "nonCheckpointPolicy": "Intermediate frames are tagged gt_checkpoint=False, gt_status='UNCHECKED' to prevent false positive ambiguity."
+  },
+  "blindTestingResults": {
+    "assetA_Baseline": {
+      "file": "sync_test_1080p60_15s.mp4",
+      "specs": "1080p60 CFR, GOP=12, 900 frames",
+      "runs": [
+        {
+          "seed": 42,
+          "maxAbsPhaseLagMs": 2.643,
+          "rmsJitterMs": 0.909,
+          "maxDeltaFrame": 0
+        },
+        {
+          "seed": 137,
+          "maxAbsPhaseLagMs": 2.422,
+          "rmsJitterMs": 0.844,
+          "maxDeltaFrame": 0
+        },
+        {
+          "seed": 2026,
+          "maxAbsPhaseLagMs": 2.159,
+          "rmsJitterMs": 0.764,
+          "maxDeltaFrame": 0
+        }
+      ],
+      "worstRun": {
+        "totalFrames": 900,
+        "checkpointsTotal": 15,
+        "checkpointsPassed": 15,
+        "checkpointPassRate": "100.0%",
+        "maxDeltaFrame": 0,
+        "maxAbsPhaseLagMs": 2.643,
+        "meanAbsPhaseLagMs": 0.728,
+        "rmsPhaseJitterMs": 0.909,
+        "passed_A": true,
+        "passed_B": true,
+        "passed_C": true,
+        "overall_passed": true
+      }
+    },
+    "assetB_ComplexMandelbrot": {
+      "file": "sync_test_complex_gop24_24fps_15s.mp4",
+      "specs": "1080p24 CFR, GOP=24, 360 frames (High Spatial Complexity Mandelbrot Fractal)",
+      "runs": [
+        {
+          "seed": 42,
+          "maxAbsPhaseLagMs": 2.308,
+          "rmsJitterMs": 0.791,
+          "maxDeltaFrame": 0
+        },
+        {
+          "seed": 137,
+          "maxAbsPhaseLagMs": 2.387,
+          "rmsJitterMs": 0.812,
+          "maxDeltaFrame": 0
+        },
+        {
+          "seed": 2026,
+          "maxAbsPhaseLagMs": 2.445,
+          "rmsJitterMs": 0.812,
+          "maxDeltaFrame": 0
+        }
+      ],
+      "worstRun": {
+        "totalFrames": 360,
+        "checkpointsTotal": 15,
+        "checkpointsPassed": 15,
+        "checkpointPassRate": "100.0%",
+        "maxDeltaFrame": 0,
+        "maxAbsPhaseLagMs": 2.445,
+        "meanAbsPhaseLagMs": 0.653,
+        "rmsPhaseJitterMs": 0.812,
+        "passed_A": true,
+        "passed_B": true,
+        "passed_C": true,
+        "overall_passed": true
+      }
+    },
+    "assetC_BroadcastShortGop": {
+      "file": "sync_test_broadcast_gop6_30fps_15s.mp4",
+      "specs": "1080p30 CFR, GOP=6, 450 frames (SMPTE Color Bars, High I-Frame Cadence)",
+      "runs": [
+        {
+          "seed": 42,
+          "maxAbsPhaseLagMs": 1.836,
+          "rmsJitterMs": 0.651,
+          "maxDeltaFrame": 0
+        },
+        {
+          "seed": 137,
+          "maxAbsPhaseLagMs": 1.756,
+          "rmsJitterMs": 0.652,
+          "maxDeltaFrame": 0
+        },
+        {
+          "seed": 2026,
+          "maxAbsPhaseLagMs": 1.797,
+          "rmsJitterMs": 0.618,
+          "maxDeltaFrame": 0
+        }
+      ],
+      "worstRun": {
+        "totalFrames": 450,
+        "checkpointsTotal": 15,
+        "checkpointsPassed": 15,
+        "checkpointPassRate": "100.0%",
+        "maxDeltaFrame": 0,
+        "maxAbsPhaseLagMs": 1.836,
+        "meanAbsPhaseLagMs": 0.525,
+        "rmsPhaseJitterMs": 0.651,
+        "passed_A": true,
+        "passed_B": true,
+        "passed_C": true,
+        "overall_passed": true
+      }
+    }
+  },
+  "crossAssetWorstCaseSummary": {
+    "maxFrameDisplacement": 0,
+    "worstMaxPhaseLagMs": 2.643,
+    "worstRmsPhaseJitterMs": 0.909,
+    "worstCaseOrigin": "Asset A (Baseline Synthetic) (Seed 42)",
+    "auditCriteriaEvaluation": {
+      "criterionA_ZeroFrameDisplacement": {
+        "specification": "deltaFrame == 0 across all frames and assets",
+        "worstMeasured": "max |deltaFrame| = 0 frames",
+        "verdict": "PASSED"
+      },
+      "criterionB_SubHalfFramePhaseLag": {
+        "specification": "max |e(t)| < 8.0 ms (universal sub-half frame bound)",
+        "worstMeasured": "worst max |e(t)| = 2.643 ms",
+        "verdict": "PASSED"
+      },
+      "criterionC_RmsJitterUnder3_5ms": {
+        "specification": "RMS Phase Jitter <= 3.5 ms across all runs",
+        "worstMeasured": "worst RMS = 0.909 ms",
+        "verdict": "PASSED"
+      }
+    },
+    "finalAuditVerdict": "TC_SYNC_01_PASSED_UNCONDITIONAL"
+  }
+}

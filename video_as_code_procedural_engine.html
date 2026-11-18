@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Video as Code - Procedural Gouache & Chalk Animation Engine</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #14161a;
+    color: #e2e8f0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 24px 16px;
+  }
+  header {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  header h1 {
+    font-size: 24px;
+    font-weight: 700;
+    color: #f8fafc;
+    letter-spacing: -0.5px;
+    margin-bottom: 6px;
+  }
+  header p {
+    font-size: 14px;
+    color: #94a3b8;
+  }
+  .tag {
+    display: inline-block;
+    background: #0ea5e9;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-left: 8px;
+    text-transform: uppercase;
+  }
+
+  /* Control Panel */
+  .toolbar {
+    display: flex;
+    gap: 12px;
+    background: #1e222b;
+    padding: 10px 16px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    align-items: center;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+  .tab-btn {
+    background: #2d3340;
+    color: #cbd5e1;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+  .tab-btn:hover { background: #3b4455; color: #fff; }
+  .tab-btn.active {
+    background: #3b82f6;
+    color: #fff;
+    box-shadow: 0 2px 10px rgba(59,130,246,0.4);
+  }
+  .sep { width: 1px; height: 24px; background: #334155; margin: 0 4px; }
+  .action-btn {
+    background: #10b981;
+    color: white;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.2s;
+  }
+  .action-btn:hover { background: #059669; }
+
+  /* Canvas Stage */
+  #stage-container {
+    position: relative;
+    width: 600px;
+    height: 600px;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+    background: #faf8f4;
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Timeline Control */
+  .timeline-bar {
+    width: 600px;
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #1e222b;
+    padding: 10px 16px;
+    border-radius: 10px;
+  }
+  .timeline-bar input[type="range"] {
+    flex: 1;
+    accent-color: #3b82f6;
+    cursor: pointer;
+  }
+  .frame-display {
+    font-family: monospace;
+    font-size: 13px;
+    color: #38bdf8;
+    min-width: 80px;
+    text-align: right;
+  }
+
+  /* Info Card */
+  .info-box {
+    width: 600px;
+    margin-top: 20px;
+    background: #1a1e26;
+    border: 1px solid #2d3442;
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #94a3b8;
+  }
+  .info-box strong { color: #f1f5f9; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Video as Code · Procedural Gouache & Chalk Engine <span class="tag">Gemini 4 Hydrogen Style</span></h1>
+  <p>100% Pure Code Canvas Illustration · Zero Dependencies · Fully Animatable · 60 FPS Deterministic</p>
+</header>
+
+<div class="toolbar">
+  <button class="tab-btn active" onclick="switchScene(0)">1. 戴海鹦帽的女孩 (Portrait)</button>
+  <button class="tab-btn" onclick="switchScene(1)">2. 秋风漫步 (Autumn Walk)</button>
+  <button class="tab-btn" onclick="switchScene(2)">3. 罗马假日 (Rome Vespa)</button>
+  <div class="sep"></div>
+  <button class="action-btn" id="playBtn" onclick="togglePlay()">⏸ 暂停</button>
+  <button class="action-btn" style="background:#6366f1" onclick="exportFrame()">📸 导出当前画作</button>
+</div>
+
+<div id="stage-container">
+  <canvas id="artCanvas" width="1200" height="1200"></canvas>
+</div>
+
+<div class="timeline-bar">
+  <span style="font-size:12px;color:#94a3b8;">帧控制:</span>
+  <input type="range" id="seekSlider" min="0" max="300" value="0" oninput="onSeek(this.value)">
+  <span class="frame-display" id="frameDisplay">Frame: 0</span>
+</div>
+
+<div class="info-box">
+  <strong>💡 为什么这对 Video as Code 是颠覆性能力？</strong><br>
+  传统 AI 视频（Diffusion / Video Gen）存在人物闪烁、肢体变形与几十兆视频资产问题。而通过<strong>纯代码程序化插画引擎</strong>，整幅精美水粉画是一段纯数学代码：身体关节、围巾飘动、落叶轨迹、眨眼与呼吸均可由时间变量 <code>frame</code> 严格驱动，完美接入 Remotion 与 HyperFrames，实现 0MB 资产、无限分辨率、毫秒级渲染与精确音画同步！
+</div>
+
+<script>
+const canvas = document.getElementById('artCanvas');
+const ctx = canvas.getContext('2d');
+const W = 1200, H = 1200;
+
+let currentScene = 0;
+let currentFrame = 0;
+let isPlaying = true;
+let animId = null;
+
+// PRNG for consistent strokes
+let prngSeed = 12345;
+function rnd() {
+  prngSeed = (prngSeed * 16807) % 2147483647;
+  return (prngSeed - 1) / 2147483646;
+}
+function rndRange(min, max) { return min + rnd() * (max - min); }
+
+// ---------------------------------------------------------------------------
+// ORGANIC GOUACHE & CHALK BRUSH SYSTEM
+// ---------------------------------------------------------------------------
+
+function drawGouachePoly(points, fillColor, grainColor = null, jitter = 2.0, grainDensity = 0.65) {
+  ctx.save();
+  ctx.beginPath();
+  const n = points.length;
+  for (let i = 0; i < n; i++) {
+    const p1 = points[i];
+    const p2 = points[(i + 1) % n];
+    if (i === 0) ctx.moveTo(p1[0], p1[1]);
+    const dist = Math.hypot(p2[0] - p1[0], p2[1] - p1[1]);
+    const segs = Math.max(3, Math.floor(dist / 20));
+    for (let s = 1; s <= segs; s++) {
+      const t = s / segs;
+      const nx = -(p2[1] - p1[1]);
+      const ny = (p2[0] - p1[0]);
+      const len = Math.hypot(nx, ny) || 1;
+      const j = (rnd() - 0.5) * jitter * 2.5;
+      ctx.lineTo(p1[0] + (p2[0] - p1[0]) * t + (nx / len) * j, p1[1] + (p2[1] - p1[1]) * t + (ny / len) * j);
+    }
+  }
+  ctx.closePath();
+  ctx.fillStyle = fillColor;
+  ctx.fill();
+
+  ctx.clip();
+  let minX = W, maxX = 0, minY = H, maxY = 0;
+  for (const [x, y] of points) {
+    if (x < minX) minX = x;
+    if (x > maxX) maxX = x;
+    if (y < minY) minY = y;
+    if (y > maxY) maxY = y;
+  }
+  
+  const col = grainColor || fillColor;
+  ctx.fillStyle = col;
+  const dotCount = (maxX - minX) * (maxY - minY) * (grainDensity * 0.002);
+  for (let i = 0; i < dotCount; i++) {
+    ctx.globalAlpha = rndRange(0.12, 0.35);
+    ctx.beginPath();
+    ctx.arc(rndRange(minX, maxX), rndRange(minY, maxY), rndRange(0.8, 2.0), 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawCrayonLine(x1, y1, x2, y2, color, width = 3, jitter = 1.6) {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineCap = 'round';
+  const dist = Math.hypot(x2 - x1, y2 - y1);
+  const steps = Math.max(4, Math.floor(dist / 10));
+  for (let pass = 0; pass < 2; pass++) {
+    ctx.globalAlpha = pass === 0 ? 0.7 : 0.35;
+    ctx.lineWidth = width * (0.8 + rnd() * 0.4);
+    ctx.beginPath();
+    ctx.moveTo(x1 + (rnd() - 0.5) * jitter, y1 + (rnd() - 0.5) * jitter);
+    for (let i = 1; i <= steps; i++) {
+      const t = i / steps;
+      ctx.lineTo(x1 + (x2 - x1) * t + (rnd() - 0.5) * jitter, y1 + (y2 - y1) * t + (rnd() - 0.5) * jitter);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawBlushSpray(cx, cy, rx, ry, color, count = 1200, maxR = 2.4) {
+  ctx.save();
+  ctx.fillStyle = color;
+  for (let i = 0; i < count; i++) {
+    const ang = rnd() * Math.PI * 2;
+    const r = Math.pow(rnd(), 0.55);
+    const px = cx + Math.cos(ang) * rx * r + (rnd() - 0.5) * 3;
+    const py = cy + Math.sin(ang) * ry * r + (rnd() - 0.5) * 3;
+    ctx.globalAlpha = (1 - r * 0.8) * rndRange(0.18, 0.55);
+    ctx.beginPath();
+    ctx.arc(px, py, (1 - r * 0.6) * rndRange(0.8, maxR), 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+// ---------------------------------------------------------------------------
+// SCENE 1: THE PUFFIN GIRL (WITH LIVING BREATHING & BLINKING)
+// ---------------------------------------------------------------------------
+
+function renderPuffinGirl(f) {
+  prngSeed = 42891;
+  ctx.fillStyle = '#faf8f4';
+  ctx.fillRect(0, 0, W, H);
+
+  // Subtle natural breathing offset
+  const breath = Math.sin(f * 0.05) * 3;
+  // Natural blinking
+  const blink = (f % 120 > 112) ? 0.1 : 1.0;
+  // Eye tracking look
+  const lookX = Math.sin(f * 0.03) * 6;
+  const lookY = Math.cos(f * 0.03) * 3;
+
+  // Back hair
+  const hairBack = [
+    [260, 320 + breath*0.5], [940, 320 + breath*0.5], [980, 480], [985, 660],
+    [930, 710], [860, 640], [810, 715], [740, 645],
+    [670, 710], [600, 640], [530, 715], [460, 645],
+    [390, 710], [320, 640], [250, 690], [215, 620], [220, 440]
+  ];
+  drawGouachePoly(hairBack, '#121822', '#070a0e', 3.0, 0.85);
+
+  // Torso / Yellow Coat
+  const coatPoints = [
+    [100, 1200], [120, 830 + breath], [220, 800 + breath], [320, 820 + breath],
+    [400, 770 + breath], [500, 760 + breath], [570, 690 + breath*0.8], [660, 690 + breath*0.8],
+    [730, 760 + breath], [830, 770 + breath], [900, 820 + breath], [1000, 800 + breath],
+    [1100, 830 + breath], [1120, 1200]
+  ];
+  drawGouachePoly(coatPoints, '#e9b124', '#d49e17', 3.0, 0.75);
+
+  // Purple stripe across chest
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(90, 1060 + breath, 1040, 95);
+  ctx.clip();
+  drawGouachePoly([[90, 1060], [1130, 1060], [1130, 1155], [90, 1155]], '#7531b5', '#58218e', 2.5, 0.85);
+  ctx.restore();
+
+  // Grid
+  for (let y = 820; y < 1200; y += 40) drawCrayonLine(120, y + breath, 1100, y + breath, 'rgba(45, 35, 15, 0.45)', 2.0);
+  for (let x = 180; x < 1080; x += 55) drawCrayonLine(x, 800 + breath, x, 1200, 'rgba(45, 35, 15, 0.45)', 2.0);
+
+  // Inner shirt
+  drawGouachePoly([[520, 710 + breath*0.8], [700, 710 + breath*0.8], [690, 1200], [530, 1200]], '#fdfbf7', '#dedad0', 2.0);
+  for (let sy = 750; sy < 1200; sy += 30) {
+    ctx.fillStyle = '#2b6ab8';
+    ctx.fillRect(525, sy + breath*0.8, 170, 14);
+  }
+
+  // Collars
+  drawGouachePoly([[415, 680 + breath], [570, 695 + breath], [545, 855 + breath], [460, 845 + breath], [415, 770 + breath]], '#2d65be', '#1d4ea0');
+  drawGouachePoly([[640, 695 + breath], [795, 680 + breath], [795, 770 + breath], [755, 845 + breath], [665, 855 + breath]], '#139b6e', '#0c7d55');
+
+  // Neck
+  drawGouachePoly([[570, 590], [640, 590], [650, 730 + breath*0.8], [560, 730 + breath*0.8]], '#fde4d3', '#f8d1ba');
+
+  // Face
+  const facePoints = [
+    [390, 340], [810, 340], [860, 460], [840, 570],
+    [760, 630], [660, 660], [540, 660], [440, 630],
+    [370, 570], [350, 460]
+  ];
+  drawGouachePoly(facePoints, '#fde6d7', '#f8d5bf');
+
+  // Blush
+  drawBlushSpray(470, 495, 90, 60, '#e85c6d', 1200);
+  drawBlushSpray(740, 495, 90, 60, '#e85c6d', 1200);
+
+  // Nose & mouth
+  drawGouachePoly([[585, 495], [612, 532], [600, 555], [575, 550]], '#d84d58', '#b5333d');
+  drawCrayonLine(570, 612, 630, 605, '#a6383f', 4.5);
+
+  // Eyes with dynamic blinking and tracking
+  ctx.save();
+  // Left eye
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.ellipse(460, 470, 45, 45 * blink, 0, 0, Math.PI * 2);
+  ctx.fill();
+  if (blink > 0.4) {
+    ctx.fillStyle = '#161d24';
+    ctx.beginPath();
+    ctx.arc(480 + lookX, 450 + lookY, 23, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(488 + lookX, 442 + lookY, 5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // Right eye
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.ellipse(765, 470, 45, 45 * blink, 0, 0, Math.PI * 2);
+  ctx.fill();
+  if (blink > 0.4) {
+    ctx.fillStyle = '#161d24';
+    ctx.beginPath();
+    ctx.arc(785 + lookX, 450 + lookY, 23, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(793 + lookX, 442 + lookY, 5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // Hat
+  const brimPoints = [];
+  for (let a = 0; a <= Math.PI * 2; a += 0.08) {
+    brimPoints.push([600 + Math.cos(a) * 340, 295 + Math.sin(a) * (a < Math.PI ? 65 : 45)]);
+  }
+  drawGouachePoly(brimPoints, '#6e39a6', '#512285');
+  drawGouachePoly([[410, 275], [598, 275], [598, 140], [490, 165], [410, 230]], '#2262bc', '#164894');
+  drawGouachePoly([[602, 275], [790, 275], [790, 230], [710, 165], [602, 140]], '#12986c', '#0a704e');
+
+  // Puffin on top
+  const px = 530, py = 85;
+  drawGouachePoly([[px - 140, py + 55], [px + 25, py - 45], [px + 90, py - 65], [px + 110, py - 15], [px + 80, py + 55], [px - 25, py + 65]], '#181e26');
+  drawGouachePoly([[px - 10, py + 62], [px + 72, py + 58], [px + 105, py - 32], [px + 55, py - 48]], '#ffffff');
+  drawGouachePoly([[px + 105, py - 38], [px + 180, py - 18], [px + 170, py + 5], [px + 105, py + 10]], '#f05537');
+
+  // Binoculars
+  const bx = 600, by = 1045 + breath;
+  drawGouachePoly([[bx - 84, by - 60], [bx - 16, by - 60], [bx - 16, by + 60], [bx - 84, by + 60]], '#2864b5');
+  drawGouachePoly([[bx + 16, by - 60], [bx + 84, by - 60], [bx + 84, by + 60], [bx + 16, by + 60]], '#2864b5');
+  drawGouachePoly([[bx - 78, by - 80], [bx - 22, by - 80], [bx - 16, by - 60], [bx - 84, by - 60]], '#d63d3d');
+  drawGouachePoly([[bx + 22, by - 80], [bx + 78, by - 80], [bx + 84, by - 60], [bx + 16, by - 60]], '#d63d3d');
+}
+
+// ---------------------------------------------------------------------------
+// SCENE 2: AUTUMN STROLL (TWO CHARACTERS, DRIFTING LEAVES & COFFEE STEAM)
+// ---------------------------------------------------------------------------
+
+function renderAutumnStroll(f) {
+  prngSeed = 88219;
+  ctx.fillStyle = '#faf8f2';
+  ctx.fillRect(0, 0, W, H);
+
+  // Walking bob cycle
+  const walkBoy = Math.sin(f * 0.1) * 8;
+  const walkGirl = Math.cos(f * 0.1) * 8;
+  const scarfWave = Math.sin(f * 0.15) * 12;
+
+  // 1. LEFT CHARACTER (BOY IN ORANGE PLAID COAT)
+  const bx = 420, by = 600 + walkBoy;
+
+  // Legs & Shoes (Walking gait)
+  const lLegAngle = Math.sin(f * 0.1) * 25;
+  const rLegAngle = -Math.sin(f * 0.1) * 25;
+  // Left leg
+  drawGouachePoly([[bx - 45, by + 260], [bx - 20, by + 260], [bx - 35 + lLegAngle, by + 420], [bx - 60 + lLegAngle, by + 420]], '#5c3584');
+  // Left shoe
+  drawGouachePoly([[bx - 80 + lLegAngle, by + 420], [bx - 20 + lLegAngle, by + 420], [bx - 30 + lLegAngle, by + 445], [bx - 90 + lLegAngle, by + 445]], '#181e26');
+  // Right leg
+  drawGouachePoly([[bx + 20, by + 260], [bx + 45, by + 260], [bx + 35 + rLegAngle, by + 420], [bx + 10 + rLegAngle, by + 420]], '#5c3584');
+  // Right shoe
+  drawGouachePoly([[bx + 0 + rLegAngle, by + 420], [bx + 60 + rLegAngle, by + 420], [bx + 50 + rLegAngle, by + 445], [bx - 10 + rLegAngle, by + 445]], '#181e26');
+
+  // Orange Plaid Coat
+  const boyCoat = [
+    [bx - 120, by - 60], [bx + 110, by - 60], [bx + 130, by + 260], [bx - 130, by + 260]
+  ];
+  drawGouachePoly(boyCoat, '#d85338', '#b53b22', 2.5, 0.75);
+  // Grid on coat
+  for (let gy = by - 50; gy < by + 250; gy += 35) drawCrayonLine(bx - 120, gy, bx + 120, gy, 'rgba(40,20,10,0.4)');
+  for (let gx = bx - 100; gx < bx + 100; gx += 40) drawCrayonLine(gx, by - 50, gx, by + 250, 'rgba(40,20,10,0.4)');
+  // Black coat buttons
+  ctx.fillStyle = '#181e26';
+  for (let gy = by + 20; gy < by + 220; gy += 60) {
+    ctx.beginPath(); ctx.arc(bx, gy, 7, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // Yellow Knit Cowl / Scarf
+  drawGouachePoly([[bx - 60, by - 80], [bx + 60, by - 80], [bx + 70, by - 15], [bx - 70, by - 15]], '#e8ac21', '#c78e11');
+
+  // Boy Head & Face
+  drawGouachePoly([[bx - 45, by - 180], [bx + 45, by - 180], [bx + 55, by - 90], [bx - 35, by - 80]], '#fce2d0', '#f7cca8');
+  drawBlushSpray(bx + 15, by - 120, 30, 20, '#ea586a', 600);
+  // Nose & smile looking at girl
+  drawGouachePoly([[bx + 25, by - 145], [bx + 45, by - 130], [bx + 25, by - 125]], '#d64848');
+  drawCrayonLine(bx + 10, by - 100, bx + 35, by - 105, '#9e2e2e', 3.5);
+  // Eye
+  ctx.fillStyle = '#181e26';
+  ctx.beginPath(); ctx.arc(bx + 25, by - 145, 6, 0, Math.PI * 2); ctx.fill();
+
+  // Green Knit Beanie with yellow pompom
+  drawGouachePoly([[bx - 55, by - 180], [bx + 45, by - 180], [bx + 35, by - 260], [bx - 35, by - 260]], '#228358', '#146340');
+  drawGouachePoly([[bx - 10, by - 280], [bx + 10, by - 280], [bx + 15, by - 260], [bx - 15, by - 260]], '#e8ac21');
+
+  // Takeaway Coffee Cup with Animated Steam
+  const cupX = bx - 60, cupY = by + 20;
+  drawGouachePoly([[cupX - 18, cupY - 25], [cupX + 18, cupY - 25], [cupX + 12, cupY + 25], [cupX - 12, cupY + 25]], '#ffffff');
+  drawGouachePoly([[cupX - 15, cupY - 5], [cupX + 15, cupY - 5], [cupX + 14, cupY + 10], [cupX - 14, cupY + 10]], '#228358');
+  // Steam particles
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+  ctx.lineWidth = 2.5;
+  for (let s = 0; s < 3; s++) {
+    const sOffset = (f * 2 + s * 30) % 60;
+    ctx.beginPath();
+    ctx.moveTo(cupX - 6 + s * 6, cupY - 30 - sOffset);
+    ctx.quadraticCurveTo(cupX + Math.sin(f*0.1 + s)*8, cupY - 50 - sOffset, cupX - 6 + s * 6, cupY - 65 - sOffset);
+    ctx.stroke();
+  }
+
+  // 2. RIGHT CHARACTER (GIRL IN TEAL COAT & PURPLE BERET)
+  const gx = 750, gy = 600 + walkGirl;
+
+  // Legs & Boots
+  const glLegAngle = -Math.sin(f * 0.1) * 22;
+  const grLegAngle = Math.sin(f * 0.1) * 22;
+  drawGouachePoly([[gx - 40, gy + 260], [gx - 18, gy + 260], [gx - 28 + glLegAngle, gy + 420], [gx - 50 + glLegAngle, gy + 420]], '#e5ab21');
+  drawGouachePoly([[gx - 70 + glLegAngle, gy + 420], [gx - 15 + glLegAngle, gy + 420], [gx - 25 + glLegAngle, gy + 445], [gx - 80 + glLegAngle, gy + 445]], '#45225c');
+  drawGouachePoly([[gx + 20, gy + 260], [gx + 42, gy + 260], [gx + 32 + grLegAngle, gy + 420], [gx + 10 + grLegAngle, gy + 420]], '#e5ab21');
+  drawGouachePoly([[gx + 0 + grLegAngle, gy + 420], [gx + 55 + grLegAngle, gy + 420], [gx + 45 + grLegAngle, gy + 445], [gx - 10 + grLegAngle, gy + 445]], '#45225c');
+
+  // Long Teal Buttoned Coat
+  const girlCoat = [
+    [gx - 110, gy - 60], [gx + 120, gy - 60], [gx + 140, gy + 270], [gx - 120, gy + 270]
+  ];
+  drawGouachePoly(girlCoat, '#1e836d', '#136251', 2.5, 0.75);
+  // Center blue placket & buttons
+  drawGouachePoly([[gx - 15, gy - 60], [gx + 15, gy - 60], [gx + 15, gy + 270], [gx - 15, gy + 270]], '#356eb5');
+  ctx.fillStyle = '#181e26';
+  for (let gyb = gy - 30; gyb < gy + 240; gyb += 65) {
+    ctx.beginPath(); ctx.arc(gx, gyb, 7, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // Fluttering Scarf in Wind
+  const scarfWaveEnd = Math.sin(f * 0.12) * 16;
+  const scarfPoly = [
+    [gx - 60, gy - 80], [gx + 50, gy - 80], 
+    [gx + 220, gy - 85 + scarfWaveEnd], [gx + 290, gy - 80 + scarfWaveEnd],
+    [gx + 285, gy - 40 + scarfWaveEnd], [gx + 50, gy - 35], [gx - 50, gy - 45]
+  ];
+  drawGouachePoly(scarfPoly, '#4270b6', '#2b4d82', 2.0, 0.7);
+  // Pink plaid lines on waving scarf
+  for (let sx = gx; sx < gx + 260; sx += 35) {
+    drawCrayonLine(sx, gy - 85 + scarfWaveEnd*0.5, sx, gy - 40 + scarfWaveEnd*0.5, '#e25197', 2.8);
+  }
+
+  // Girl Head & Face
+  drawGouachePoly([[gx - 45, gy - 180], [gx + 45, gy - 180], [gx + 50, gy - 90], [gx - 40, gy - 85]], '#fce2d0', '#f7cca8');
+  drawBlushSpray(gx - 15, gy - 120, 28, 20, '#ea586a', 600);
+  drawBlushSpray(gx + 25, gy - 120, 28, 20, '#ea586a', 600);
+  // Eyes
+  ctx.fillStyle = '#181e26';
+  ctx.beginPath(); ctx.arc(gx - 15, gy - 145, 6, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(gx + 25, gy - 145, 6, 0, Math.PI * 2); ctx.fill();
+  drawGouachePoly([[gx + 5, gy - 140], [gx + 18, gy - 125], [gx + 2, gy - 122]], '#d64848');
+  drawCrayonLine(gx - 5, gy - 100, gx + 20, gy - 100, '#9e2e2e', 3.5);
+
+  // Purple Beret with Orange Brim
+  drawGouachePoly([[gx - 65, gy - 175], [gx + 55, gy - 175], [gx + 65, gy - 230], [gx - 65, gy - 230]], '#6b3281', '#4a1d5c');
+  drawGouachePoly([[gx - 70, gy - 175], [gx + 60, gy - 175], [gx + 55, gy - 190], [gx - 65, gy - 190]], '#e85c27');
+
+  // Holding Yellow Striped Umbrella
+  const umbX = gx + 140, umbY = gy + 120;
+  drawGouachePoly([[umbX - 8, umbY - 80], [umbX + 8, umbY - 80], [umbX + 35, umbY + 80], [umbX + 22, umbY + 85]], '#e8ad21');
+  drawCrayonLine(umbX, umbY - 80, umbX + 30, umbY + 80, '#222', 2.0);
+  // Curved wooden handle
+  ctx.strokeStyle = '#6e3f16';
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.arc(umbX - 8, umbY - 90, 14, Math.PI, 0);
+  ctx.stroke();
+
+  // 3. DRIFTING AUTUMN LEAVES (PHYSICS & TURBULENCE)
+  for (let l = 0; l < 18; l++) {
+    const lx = (l * 75 + f * (1.5 + (l % 3) * 0.5)) % W;
+    const ly = (l * 85 + Math.sin(f * 0.05 + l) * 40 + f * 0.8) % H;
+    const lColor = (l % 3 === 0) ? '#e5a522' : ((l % 3 === 1) ? '#d64e28' : '#228258');
+    ctx.save();
+    ctx.translate(lx, ly);
+    ctx.rotate(f * 0.03 + l);
+    drawGouachePoly([[-12, 0], [0, -18], [12, 0], [0, 18]], lColor);
+    ctx.restore();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// SCENE 3: ROME COLOSSEUM & VESPA (CITY LIFE, WAVING CAT & CHAIRS)
+// ---------------------------------------------------------------------------
+
+function renderRomeHoliday(f) {
+  prngSeed = 99124;
+  ctx.fillStyle = '#faf8f4';
+  ctx.fillRect(0, 0, W, H);
+
+  // Sunny Sky arch
+  drawGouachePoly([[200, 400], [1000, 400], [900, 120], [300, 120]], '#68b2e5', '#498ec0', 2.5, 0.4);
+
+  // Background Stone Pines (Umbrella Pines)
+  drawGouachePoly([[700, 420], [715, 420], [715, 220], [700, 220]], '#5a4128');
+  drawGouachePoly([[640, 230], [780, 210], [760, 170], [660, 180]], '#1b744a', '#0f5232', 2.5);
+  drawGouachePoly([[830, 420], [845, 420], [845, 260], [830, 260]], '#5a4128');
+  drawGouachePoly([[770, 270], [910, 250], [890, 210], [790, 220]], '#1b744a', '#0f5232', 2.5);
+
+  // Birds in sky
+  for (let b = 0; b < 4; b++) {
+    const bx = 340 + b * 110 + Math.sin(f*0.04 + b)*15;
+    const by = 130 + b * 20 + Math.cos(f*0.04 + b)*8;
+    drawCrayonLine(bx - 12, by - 4, bx, by + 2, '#181e26', 2.5);
+    drawCrayonLine(bx, by + 2, bx + 12, by - 4, '#181e26', 2.5);
+  }
+
+  // ROMAN COLOSSEUM
+  const colPoly = [
+    [320, 840], [790, 840], [780, 260], [320, 260]
+  ];
+  drawGouachePoly(colPoly, '#e8b23a', '#c7921a', 3.0, 0.7);
+
+  // Colosseum Arch Windows (Multi-Tier)
+  for (let tier = 0; tier < 3; tier++) {
+    const ty = 380 + tier * 140;
+    for (let arch = 0; arch < 6; arch++) {
+      const ax = 360 + arch * 70;
+      drawGouachePoly([[ax, ty + 90], [ax + 45, ty + 90], [ax + 45, ty + 20], [ax + 22, ty], [ax, ty + 20]], '#221915', '#110c0a');
+    }
+  }
+
+  // Left Terracotta House
+  drawGouachePoly([[140, 920], [270, 920], [270, 310], [140, 330]], '#d34b35', '#b03420');
+  // Striped Awning
+  drawGouachePoly([[130, 760], [280, 760], [270, 800], [130, 800]], '#2b65ba');
+  for (let aw = 140; aw < 270; aw += 30) {
+    drawGouachePoly([[aw, 760], [aw + 15, 760], [aw + 12, 800], [aw, 800]], '#ffffff');
+  }
+
+  // Right Tuscan Beige House
+  drawGouachePoly([[880, 920], [1050, 920], [1040, 350], [880, 390]], '#d7967b', '#b97458');
+  // Arched Doorway
+  drawGouachePoly([[920, 920], [980, 920], [980, 800], [950, 770], [920, 800]], '#126048');
+
+  // Laundry Line with Fluttering Clothes
+  const clothWave = Math.sin(f * 0.1) * 6;
+  drawCrayonLine(880, 560, 1020, 560, '#222', 2.0);
+  drawGouachePoly([[890, 560], [925, 560], [925, 600 + clothWave], [890, 600 + clothWave]], '#e8ac21');
+  drawGouachePoly([[940, 560], [975, 560], [975, 610 - clothWave], [940, 610 - clothWave]], '#ffffff');
+  drawGouachePoly([[990, 560], [1025, 560], [1025, 600 + clothWave], [990, 600 + clothWave]], '#d64835');
+
+  // FOREGROUND SQUARE: TEAL VESPA SCOOTER
+  const vx = 420, vy = 920;
+  // Wheels
+  ctx.fillStyle = '#181e26';
+  ctx.beginPath(); ctx.arc(vx - 55, vy + 40, 22, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(vx + 55, vy + 40, 22, 0, Math.PI * 2); ctx.fill();
+  // Body
+  drawGouachePoly([[vx - 60, vy + 30], [vx + 60, vy + 30], [vx + 50, vy - 20], [vx - 20, vy - 10], [vx - 60, vy + 10]], '#24a5b6');
+  // Handlebars & Headlight
+  drawCrayonLine(vx + 45, vy - 20, vx + 55, vy - 55, '#222', 4.0);
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath(); ctx.arc(vx + 55, vy - 55, 8, 0, Math.PI * 2); ctx.fill();
+
+  // ADORABLE WAVING TUXEDO CAT
+  const catX = 610, catY = 910;
+  // Tail wagging
+  const tailWag = Math.sin(f * 0.2) * 14;
+  ctx.strokeStyle = '#181e26';
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.moveTo(catX - 15, catY + 20);
+  ctx.quadraticCurveTo(catX - 35 + tailWag, catY + 5, catX - 40 + tailWag, catY - 15);
+  ctx.stroke();
+
+  // Body & White Tuxedo Chest
+  drawGouachePoly([[catX - 18, catY + 30], [catX + 18, catY + 30], [catX + 16, catY - 20], [catX - 16, catY - 20]], '#181e26');
+  drawGouachePoly([[catX - 8, catY + 20], [catX + 8, catY + 20], [catX + 6, catY - 10], [catX - 6, catY - 10]], '#ffffff');
+
+  // Head & Ears
+  drawGouachePoly([[catX - 16, catY - 20], [catX + 16, catY - 20], [catX + 16, catY - 45], [catX - 16, catY - 45]], '#181e26');
+  drawGouachePoly([[catX - 16, catY - 45], [catX - 8, catY - 60], [catX, catY - 45]], '#181e26');
+  drawGouachePoly([[catX + 16, catY - 45], [catX + 8, catY - 60], [catX, catY - 45]], '#181e26');
+  // Big round eyes
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath(); ctx.arc(catX - 7, catY - 32, 5, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(catX + 7, catY - 32, 5, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#181e26';
+  ctx.beginPath(); ctx.arc(catX - 7, catY - 32, 2.5, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(catX + 7, catY - 32, 2.5, 0, Math.PI * 2); ctx.fill();
+
+  // Waving paw!
+  const wavePaw = Math.sin(f * 0.25) * 8;
+  drawGouachePoly([[catX + 14, catY - 10], [catX + 30, catY - 30 + wavePaw], [catX + 24, catY - 35 + wavePaw]], '#ffffff');
+
+  // Bistro Umbrella & Table
+  const tx = 770, ty = 910;
+  drawCrayonLine(tx, ty + 20, tx, ty - 60, '#222', 4.0);
+  drawGouachePoly([[tx - 60, ty - 60], [tx + 60, ty - 60], [tx, ty - 105]], '#7534aa');
+  drawGouachePoly([[tx - 30, ty - 60], [tx + 30, ty - 60], [tx, ty - 105]], '#e8ac21');
+  // Table & chairs
+  drawGouachePoly([[tx - 25, ty + 10], [tx + 25, ty + 10], [tx + 20, ty + 18], [tx - 20, ty + 18]], '#ffffff');
+  drawGouachePoly([[tx - 45, ty - 5], [tx - 32, ty - 5], [tx - 30, ty + 30], [tx - 42, ty + 30]], '#d64835');
+  drawGouachePoly([[tx + 45, ty - 5], [tx + 32, ty - 5], [tx + 30, ty + 30], [tx + 42, ty + 30]], '#24a5b6');
+}
+
+// ---------------------------------------------------------------------------
+// ANIMATION LOOP & TIMELINE CONTROLS
+// ---------------------------------------------------------------------------
+
+function render() {
+  if (currentScene === 0) renderPuffinGirl(currentFrame);
+  else if (currentScene === 1) renderAutumnStroll(currentFrame);
+  else if (currentScene === 2) renderRomeHoliday(currentFrame);
+
+  if (isPlaying) {
+    currentFrame = (currentFrame + 1) % 301;
+    document.getElementById('seekSlider').value = currentFrame;
+    document.getElementById('frameDisplay').textContent = `Frame: ${currentFrame}`;
+  }
+  animId = requestAnimationFrame(render);
+}
+
+function switchScene(index) {
+  currentScene = index;
+  document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', i === index);
+  });
+}
+
+function togglePlay() {
+  isPlaying = !isPlaying;
+  document.getElementById('playBtn').textContent = isPlaying ? '⏸ 暂停' : '▶ 播放';
+}
+
+function onSeek(val) {
+  currentFrame = parseInt(val);
+  document.getElementById('frameDisplay').textContent = `Frame: ${currentFrame}`;
+}
+
+function exportFrame() {
+  const link = document.createElement('a');
+  link.download = `art_scene_${currentScene + 1}_frame_${currentFrame}.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+// Start loop
+animId = requestAnimationFrame(render);
+</script>
+</body>
+</html>

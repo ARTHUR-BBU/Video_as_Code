@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MiniMax M3.1 Flash - Space Bunny 3D Motion (High-Fidelity Cinema Replica)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #111827;
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", Roboto, sans-serif;
+      user-select: none;
+    }
+    #canvas-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 1920px;
+      height: 1080px;
+      transform-origin: top left;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    #ui-overlay {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 10px 24px;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 9999px;
+      color: #fff;
+      font-size: 14px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    }
+    .btn {
+      background: #f97316;
+      border: none;
+      color: #fff;
+      padding: 6px 16px;
+      border-radius: 9999px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .btn:hover { background: #ea580c; }
+    .btn:active { transform: scale(0.96); }
+    #time-slider {
+      width: 340px;
+      cursor: pointer;
+      accent-color: #f97316;
+    }
+    #time-display {
+      font-family: monospace;
+      font-size: 13px;
+      color: #cbd5e1;
+      min-width: 95px;
+    }
+  </style>
+  <script src="libs/three.min.js"></script>
+  <script src="libs/gsap.min.js"></script>
+  <script src="libs/helvetiker_bold.js"></script>
+</head>
+<body>
+
+  <div id="canvas-container">
+    <canvas id="webgl-canvas"></canvas>
+  </div>
+
+  <div id="ui-overlay">
+    <button class="btn" id="play-btn">播放 / 暂停</button>
+    <input type="range" id="time-slider" min="0" max="26.08" step="0.01" value="0">
+    <span id="time-display">00:00.00 / 26.08</span>
+    <button class="btn" id="reset-btn" style="background: #475569;">重置</button>
+  </div>
+
+  <audio id="soundtrack" src="../space_bunny/soundtrack.wav" preload="auto"></audio>
+
+  <script>
+    // --- Constants ---
+    const TOTAL_DURATION = 26.083;
+    const FPS = 60;
+    const WIDTH = 1920;
+    const HEIGHT = 1080;
+
+    function resizeContainer() {
+      const scale = Math.min(window.innerWidth / WIDTH, window.innerHeight / HEIGHT);
+      const container = document.getElementById('canvas-container');
+      container.style.transform = `scale(${scale})`;
+      container.style.left = `${(window.innerWidth - WIDTH * scale) / 2}px`;
+      container.style.top = `${(window.innerHeight - HEIGHT * scale) / 2}px`;
+    }
+    window.addEventListener('resize', resizeContainer);
+    resizeContainer();
+
+    // --- Font Setup ---
+    let font3D = null;
+    if (window.HELVETIKER_FONT_DATA && THREE.FontLoader) {
+      font3D = new THREE.FontLoader().parse(window.HELVETIKER_FONT_DATA);
+    }
+
+    // Helper: Build 3D Extruded Text Mesh
+    function create3DText(text, size, height, color, bevel = true) {
+      if (!font3D) return new THREE.Group();
+      const geo = new THREE.TextGeometry(text, {
+        font: font3D,
+        size: size,
+        height: height,
+        curveSegments: 8,
+        bevelEnabled: bevel,
+        bevelThickness: bevel ? size * 0.05 : 0,
+        bevelSize: bevel ? size * 0.04 : 0,
+        bevelSegments: 4
+      });
+      geo.computeBoundingBox();
+      const centerOffsetX = -0.5 * (geo.boundingBox.max.x - geo.boundingBox.min.x);
+      const centerOffsetY = -0.5 * (geo.boundingBox.max.y - geo.boundingBox.min.y);
+      geo.translate(centerOffsetX, centerOffsetY, 0);
+
+      const mat = new THREE.MeshStandardMaterial({
+        color: color,
+        roughness: 0.35,
+        metalness: 0.1
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      return mesh;
+    }
+
+    // --- Three.js Renderer Setup ---
+    const canvas = document.getElementById('webgl-canvas');
+    const renderer = new THREE.WebGLRenderer({
+      canvas: canvas,
+      antialias: true,
+      alpha: false,
+      powerPreference: 'high-performance',
+      preserveDrawingBuffer: true
+    });
+    renderer.setSize(WIDTH, HEIGHT);
+    renderer.setPixelRatio(1);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.25;
+
+    const scene = new THREE.Scene();
+
+    const camera = new THREE.PerspectiveCamera(40, WIDTH / HEIGHT, 0.1, 1000);
+    camera.position.set(0, 3.5, 15);
+
+    // --- Cinematic Sky Dome / Gradient Background ---
+    const skyGeo = new THREE.SphereGeometry(180, 32, 24);
+    // Vertical gradient shader
+    const skyMat = new THREE.ShaderMaterial({
+      uniforms: {
+        topColor: { value: new THREE.Color(0x627d96) },
+        midColor: { value: new THREE.Color(0xb69c9b) },
+        botColor: { value: new THREE.Color(0xe2beaa) },
+        offset: { value: 10 },
+        exponent: { value: 0.75 }
+      },
+      vertexShader: `
+        varying vec3 vWorldPosition;
+        void main() {
+          vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+          vWorldPosition = worldPosition.xyz;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 topColor;
+        uniform vec3 midColor;
+        uniform vec3 botColor;
+        varying vec3 vWorldPosition;
+        void main() {
+          float h = normalize(vWorldPosition).y;
+          vec3 col;
+          if (h > 0.0) {
+            col = mix(midColor, topColor, pow(h, 0.8));
+          } else {
+            col = mix(midColor, botColor, pow(-h, 0.8));
+          }
+          gl_FragColor = vec4(col, 1.0);
+        }
+      `,
+      side: THREE.BackSide
+    });
+    const sky = new THREE.Mesh(skyGeo, skyMat);
+    scene.add(sky);
+
+    // --- Studio Lighting Setup ---
+    // 1. Sun / Key Light
+    const sunLight = new THREE.DirectionalLight(0xfffaec, 1.45);
+    sunLight.position.set(12, 22, 14);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.width = 4096;
+    sunLight.shadow.mapSize.height = 4096;
+    sunLight.shadow.camera.near = 0.5;
+    sunLight.shadow.camera.far = 70;
+    sunLight.shadow.camera.left = -16;
+    sunLight.shadow.camera.right = 16;
+    sunLight.shadow.camera.top = 16;
+    sunLight.shadow.camera.bottom = -16;
+    sunLight.shadow.bias = -0.0003;
+    scene.add(sunLight);
+
+    // 2. Sky Fill Light (Cyan/Blue)
+    const skyFill = new THREE.DirectionalLight(0x89b0d6, 0.65);
+    skyFill.position.set(-12, 10, -6);
+    scene.add(skyFill);
+
+    // 3. Ground Bounce Light (Warm Amber)
+    const groundBounce = new THREE.DirectionalLight(0xf5d2ba, 0.75);
+    groundBounce.position.set(0, -12, 4);
+    scene.add(groundBounce);
+
+    // 4. Soft Hemisphere Light
+    const hemiLight = new THREE.HemisphereLight(0xa5c4e0, 0xdcb89d, 0.8);
+    scene.add(hemiLight);
+
+    // --- Materials ---
+    const matCarrot = new THREE.MeshStandardMaterial({
+      color: 0xff6618,
+      roughness: 0.38,
+      metalness: 0.04
+    });
+    const matCarrotTip = new THREE.MeshStandardMaterial({
+      color: 0xf43f5e,
+      roughness: 0.4,
+      metalness: 0.05
+    });
+    const matLeaf = new THREE.MeshStandardMaterial({
+      color: 0x4d801e,
+      roughness: 0.55,
+      metalness: 0.05
+    });
+    const matCloud = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      roughness: 0.94,
+      metalness: 0.0
+    });
+    const matFloor = new THREE.MeshStandardMaterial({
+      color: 0xddc1aa,
+      roughness: 0.78
+    });
+    const matMetal = new THREE.MeshStandardMaterial({
+      color: 0x475569,
+      roughness: 0.35,
+      metalness: 0.65
+    });
+    const matGold = new THREE.MeshStandardMaterial({
+      color: 0xf59e0b,
+      roughness: 0.28,
+      metalness: 0.55
+    });
+    const matShieldGreen = new THREE.MeshStandardMaterial({
+      color: 0x16a34a,
+      roughness: 0.35,
+      metalness: 0.15
+    });
+    const matShieldDark = new THREE.MeshStandardMaterial({
+      color: 0x14532d,
+      roughness: 0.3,
+      metalness: 0.25
+    });
+    const matGlass = new THREE.MeshPhysicalMaterial({
+      color: 0xffffff,
+      transmission: 0.92,
+      opacity: 0.96,
+      transparent: true,
+      roughness: 0.16,
+      ior: 1.54,
+      thickness: 1.5,
+      reflectivity: 0.9,
+      specularIntensity: 1.2
+    });
+
+    // Helper: High-Res Canvas Texture
+    function makeCanvasTexture(drawFn, width = 1024, height = 512) {
+      const c = document.createElement('canvas');
+      c.width = width;
+      c.height = height;
+      const ctx = c.getContext('2d');
+      drawFn(ctx, width, height);
+      const texture = new THREE.CanvasTexture(c);
+      texture.minFilter = THREE.LinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+      texture.generateMipmaps = true;
+      return texture;
+    }
+
+    // Bunny Badge Texture
+    const bunnyBadgeTexture = makeCanvasTexture((ctx, w, h) => {
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(w/2, h/2, w/2 * 0.92, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Bunny head silhouette
+      ctx.fillStyle = '#1e293b';
+      // ears
+      ctx.beginPath();
+      ctx.ellipse(w/2 - 65, h/2 - 130, 32, 90, -0.15, 0, Math.PI * 2);
+      ctx.ellipse(w/2 + 65, h/2 - 130, 32, 90, 0.15, 0, Math.PI * 2);
+      ctx.fill();
+      // head
+      ctx.beginPath();
+      ctx.arc(w/2, h/2 - 35, 80, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Text: SPACE BUNNY
+      ctx.font = '900 56px -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('SPACE', w/2, h/2 + 100);
+      ctx.font = '900 48px -apple-system, sans-serif';
+      ctx.fillText('BUNNY', w/2, h/2 + 165);
+    }, 512, 512);
+
+    // Carrots Sliced Cross-Section Texture
+    const carrotSliceTexture = makeCanvasTexture((ctx, w, h) => {
+      const cx = w / 2, cy = h / 2, r = w / 2 - 8;
+      // Outer peel
+      ctx.fillStyle = '#c2410c';
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Outer cortex
+      ctx.fillStyle = '#ea580c';
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.92, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Mid rings
+      ctx.fillStyle = '#f97316';
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.78, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#fb923c';
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.60, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Core
+      ctx.fillStyle = '#fed7aa';
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.40, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffedd5';
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.20, 0, Math.PI * 2);
+      ctx.fill();
+    }, 512, 512);
+
+    // --- Mesh Builders ---
+
+    // 1. Organic Fluffy Cumulus Cloud
+    function createFluffyCloud(scale = 1.0) {
+      const g = new THREE.Group();
+      const numSpheres = 12;
+      for (let i = 0; i < numSpheres; i++) {
+        const r = (0.7 + Math.random() * 0.7) * scale;
+        const sphere = new THREE.Mesh(new THREE.SphereGeometry(r, 20, 20), matCloud);
+        const theta = (i / numSpheres) * Math.PI * 2;
+        const dist = (0.8 + Math.random() * 0.6) * scale;
+        sphere.position.set(
+          Math.cos(theta) * dist,
+          (Math.random() - 0.5) * 0.7 * scale,
+          Math.sin(theta) * dist
+        );
+        sphere.castShadow = true;
+        sphere.receiveShadow = true;
+        g.add(sphere);
+      }
+      return g;
+    }
+
+    // 2. Organic Hand-Sculpted Carrot Rocket (Lathe Spline)
+    function createSculptedCarrotRocket() {
+      const rocket = new THREE.Group();
+
+      // Lathe profile points for body
+      const points = [];
+      points.push(new THREE.Vector2(0.0, 3.4));  // tip apex
+      points.push(new THREE.Vector2(0.4, 3.2));
+      points.push(new THREE.Vector2(0.85, 2.7));
+      points.push(new THREE.Vector2(1.2, 2.0));  // shoulder
+      points.push(new THREE.Vector2(1.35, 1.2));
+      points.push(new THREE.Vector2(1.38, 0.4));
+      points.push(new THREE.Vector2(1.32, -0.4));
+      points.push(new THREE.Vector2(1.2, -1.2));
+      points.push(new THREE.Vector2(0.95, -1.8)); // bottom taper
+      points.push(new THREE.Vector2(0.65, -2.1));
+      points.push(new THREE.Vector2(0.0, -2.1));
+
+      const latheGeo = new THREE.LatheGeometry(points, 36);
+      const body = new THREE.Mesh(latheGeo, matCarrot);
+      body.castShadow = true;
+      body.receiveShadow = true;
+      rocket.add(body);
+
+      // Nose Tip Accent (Pink/Coral)
+      const tipGeo = new THREE.ConeGeometry(0.86, 1.5, 36);
+      const tip = new THREE.Mesh(tipGeo, matCarrotTip);
+      tip.position.y = 2.45;
+      tip.castShadow = true;
+      rocket.add(tip);
+
+      // Rocket Booster Motor
+      const nozzleGeo = new THREE.CylinderGeometry(0.55, 0.8, 0.7, 24);
+      const nozzle = new THREE.Mesh(nozzleGeo, matMetal);
+      nozzle.position.y = -2.35;
+      nozzle.castShadow = true;
+      rocket.add(nozzle);
+
+      // 4 Flowing Curved Leaves
+      for (let i = 0; i < 4; i++) {
+        const leafGroup = new THREE.Group();
+        const a = (i / 4) * Math.PI * 2;
+
+        const leafShape = new THREE.Shape();
+        leafShape.moveTo(0, 0);
+        leafShape.quadraticCurveTo(0.45, 1.2, 0.2, 2.2);
+        leafShape.quadraticCurveTo(0, 2.3, -0.2, 2.2);
+        leafShape.quadraticCurveTo(-0.45, 1.2, 0, 0);
+
+        const leafExtrude = new THREE.ExtrudeGeometry(leafShape, {
+          depth: 0.12,
+          bevelEnabled: true,
+          bevelThickness: 0.04,
+          bevelSize: 0.04
+        });
+        const leafMesh = new THREE.Mesh(leafExtrude, matLeaf);
+        leafMesh.rotation.x = Math.PI / 2;
+        leafMesh.rotation.z = -0.55;
+        leafMesh.castShadow = true;
+        leafGroup.add(leafMesh);
+
+        leafGroup.position.set(Math.cos(a) * 1.0, -1.6, Math.sin(a) * 1.0);
+        leafGroup.rotation.y = a;
+        rocket.add(leafGroup);
+      }
+
+      // Space Bunny Badge
+      const badgeGeo = new THREE.CylinderGeometry(0.52, 0.52, 0.08, 32);
+      const matBadgeSide = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+      const matBadgeFace = new THREE.MeshBasicMaterial({ map: bunnyBadgeTexture });
+      const badge = new THREE.Mesh(badgeGeo, [matBadgeSide, matBadgeFace, matBadgeSide]);
+      badge.position.set(0, 0.5, 1.34);
+      badge.rotation.x = Math.PI / 2;
+      badge.castShadow = true;
+      rocket.add(badge);
+
+      return rocket;
+    }
+
+    // 3. 3D Earth Globe
+    function createEarthGlobe() {
+      const globe = new THREE.Group();
+      const ocean = new THREE.Mesh(
+        new THREE.SphereGeometry(2.2, 36, 36),
+        new THREE.MeshStandardMaterial({ color: 0x2563eb, roughness: 0.32, metalness: 0.08 })
+      );
+      ocean.castShadow = true;
+      globe.add(ocean);
+
+      const matCont = new THREE.MeshStandardMaterial({ color: 0x4ade80, roughness: 0.8 });
+      for (let i = 0; i < 11; i++) {
+        const patch = new THREE.Mesh(new THREE.SphereGeometry(0.75 + (i % 3) * 0.3, 16, 16), matCont);
+        const phi = (i / 11) * Math.PI;
+        const theta = i * 1.38;
+        patch.position.setFromSphericalCoords(2.12, phi, theta);
+        patch.scale.set(1.4, 0.9, 0.22);
+        patch.lookAt(0, 0, 0);
+        globe.add(patch);
+      }
+
+      for (let j = 0; j < 6; j++) {
+        const c = createFluffyCloud(0.35);
+        const ang = (j / 6) * Math.PI * 2;
+        c.position.set(Math.cos(ang) * 3.0, Math.sin(j * 1.1) * 1.2, Math.sin(ang) * 3.0);
+        globe.add(c);
+      }
+
+      return globe;
+    }
+
+    // 4. Launch Tower & Pad Base
+    function createLaunchpad() {
+      const g = new THREE.Group();
+
+      // Sand Floor Slab
+      const floor = new THREE.Mesh(new THREE.CylinderGeometry(20, 21, 1.2, 64), matFloor);
+      floor.position.y = -0.6;
+      floor.receiveShadow = true;
+      g.add(floor);
+
+      // Cylindrical Launch Base
+      const pad = new THREE.Mesh(new THREE.CylinderGeometry(3.0, 3.4, 0.8, 36), matMetal);
+      pad.position.y = 0.4;
+      pad.receiveShadow = true;
+      pad.castShadow = true;
+      g.add(pad);
+
+      // Gantry Tower
+      const tower = new THREE.Group();
+      tower.position.set(-5.2, 4.0, -1.2);
+      const postGeo = new THREE.CylinderGeometry(0.14, 0.14, 8.5, 8);
+      for (let x of [-1.0, 1.0]) {
+        for (let z of [-1.0, 1.0]) {
+          const post = new THREE.Mesh(postGeo, matMetal);
+          post.position.set(x, 0, z);
+          post.castShadow = true;
+          tower.add(post);
+        }
+      }
+      for (let y = -3.5; y <= 3.5; y += 1.4) {
+        const strut = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.1, 2.1), matMetal);
+        strut.position.y = y;
+        tower.add(strut);
+      }
+      g.add(tower);
+
+      // Spotlight Poles
+      for (let px of [4.2, 5.8]) {
+        const pole = new THREE.Group();
+        pole.position.set(px, 2.2, 2.8);
+        const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 4.2, 8), matMetal);
+        pole.add(mast);
+        const head = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.45, 0.45), new THREE.MeshStandardMaterial({
+          color: 0xfef08a,
+          emissive: 0xfef08a,
+          emissiveIntensity: 0.8
+        }));
+        head.position.y = 2.2;
+        pole.add(head);
+        g.add(pole);
+      }
+
+      // Base Clouds
+      for (let i = 0; i < 9; i++) {
+        const c = createFluffyCloud(0.75);
+        const ang = (i / 9) * Math.PI * 2;
+        c.position.set(Math.cos(ang) * 4.8, 0.5, Math.sin(ang) * 4.2);
+        g.add(c);
+      }
+
+      return g;
+    }
+
+    // --- Scene Graph Construction ---
+    const sceneRoot = new THREE.Group();
+    scene.add(sceneRoot);
+
+    // [1] Launchpad & Scene 1
+    const launchpad = createLaunchpad();
+    sceneRoot.add(launchpad);
+
+    const rocketPad = createSculptedCarrotRocket();
+    rocketPad.position.set(0, 3.2, 0);
+    sceneRoot.add(rocketPad);
+
+    // True 3D Extruded Countdown Numbers: 1, 2, 3
+    const countdown3D = new THREE.Group();
+    countdown3D.position.set(2.2, 1.2, 3.6);
+    countdown3D.rotation.y = -0.3;
+    const num1 = create3DText('1', 1.6, 0.45, 0xf1f5f9);
+    num1.position.set(-1.8, 0, 0);
+    countdown3D.add(num1);
+    const num2 = create3DText('2', 1.8, 0.45, 0xf1f5f9);
+    num2.position.set(0, 0, 0);
+    countdown3D.add(num2);
+    const num3 = create3DText('3', 2.0, 0.45, 0xf1f5f9);
+    num3.position.set(1.8, 0, 0);
+    countdown3D.add(num3);
+    sceneRoot.add(countdown3D);
+
+    // "匿名登场" Title
+    const anonTitleTex = makeCanvasTexture((ctx, w, h) => {
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 96px "PingFang SC", sans-serif';
+      ctx.textAlign = 'right';
+      ctx.shadowColor = 'rgba(0,0,0,0.3)';
+      ctx.shadowBlur = 12;
+      ctx.fillText('匿名登场', w - 40, h/2 + 32);
+    }, 1024, 256);
+    const anonTitlePlane = new THREE.Mesh(
+      new THREE.PlaneGeometry(6, 1.5),
+      new THREE.MeshBasicMaterial({ map: anonTitleTex, transparent: true })
+    );
+    anonTitlePlane.position.set(4.2, 6.5, 0);
+    sceneRoot.add(anonTitlePlane);
+
+    // Launch Smoke Billows
+    const launchSmoke = new THREE.Group();
+    for (let i = 0; i < 22; i++) {
+      const s = new THREE.Mesh(new THREE.SphereGeometry(0.8 + Math.random() * 0.9, 18, 18), matCloud);
+      s.position.set((Math.random() - 0.5) * 3.8, Math.random() * 2.5, (Math.random() - 0.5) * 3.8);
+      launchSmoke.add(s);
+    }
+    launchSmoke.position.set(0, 0.6, 0);
+    launchSmoke.visible = false;
+    sceneRoot.add(launchSmoke);
+
+    // [2] Scene 2: OpenRouter #1 Ascending Scene
+    const scene2Group = new THREE.Group();
+    scene2Group.visible = false;
+    sceneRoot.add(scene2Group);
+
+    const openRouterTex = makeCanvasTexture((ctx, w, h) => {
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 84px "PingFang SC", sans-serif';
+      ctx.textAlign = 'left';
+      ctx.shadowColor = 'rgba(0,0,0,0.3)';
+      ctx.shadowBlur = 10;
+      ctx.fillText('10 天，', 60, 110);
+      ctx.font = 'bold 96px "PingFang SC", sans-serif';
+      ctx.fillText('OpenRouter 第一', 60, 230);
+      ctx.font = 'bold 64px monospace';
+      ctx.fillStyle = '#fed7aa';
+      ctx.fillText('56.7T tokens', 60, 330);
+    }, 1200, 450);
+    const openRouterPlane = new THREE.Mesh(
+      new THREE.PlaneGeometry(7.2, 2.7),
+      new THREE.MeshBasicMaterial({ map: openRouterTex, transparent: true })
+    );
+    openRouterPlane.position.set(-4.5, 4.2, 0);
+    scene2Group.add(openRouterPlane);
+
+    // [3] Scene 3: Sliced Carrot & Naming
+    const slicedCarrotGroup = new THREE.Group();
+    slicedCarrotGroup.visible = false;
+    sceneRoot.add(slicedCarrotGroup);
+
+    const earthGlobe = createEarthGlobe();
+    earthGlobe.position.set(3.4, -3.2, -4);
+    slicedCarrotGroup.add(earthGlobe);
+
+    const sliceMeshes = [];
+    const matCutFace = new THREE.MeshStandardMaterial({ map: carrotSliceTexture, roughness: 0.45 });
+    for (let i = 0; i < 4; i++) {
+      const sliceG = new THREE.Group();
+      if (i === 0) {
+        // Base + Leaves
+        const b = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 0.9, 1.4, 36), matCarrot);
+        sliceG.add(b);
+        const cut = new THREE.Mesh(new THREE.CircleGeometry(1.2, 36), matCutFace);
+        cut.position.y = 0.701;
+        cut.rotation.x = -Math.PI / 2;
+        sliceG.add(cut);
+        // leaves
+        for (let j = 0; j < 4; j++) {
+          const l = new THREE.Mesh(new THREE.ConeGeometry(0.45, 1.8, 16), matLeaf);
+          l.scale.set(1, 1, 0.25);
+          const a = (j / 4) * Math.PI * 2;
+          l.position.set(Math.cos(a) * 1.0, -0.6, Math.sin(a) * 1.0);
+          l.rotation.y = a;
+          sliceG.add(l);
+        }
+      } else if (i === 3) {
+        // Pointy Tip
+        const tip = new THREE.Mesh(new THREE.ConeGeometry(0.88, 1.8, 36), matCarrotTip);
+        tip.position.y = 0.9;
+        sliceG.add(tip);
+        const cut = new THREE.Mesh(new THREE.CircleGeometry(0.88, 36), matCutFace);
+        cut.position.y = 0.001;
+        cut.rotation.x = Math.PI / 2;
+        sliceG.add(cut);
+      } else {
+        // Rings
+        const r = new THREE.Mesh(new THREE.CylinderGeometry(1.25, 1.2, 1.1, 36), matCarrot);
+        sliceG.add(r);
+        const topCut = new THREE.Mesh(new THREE.CircleGeometry(1.25, 36), matCutFace);
+        topCut.position.y = 0.551;
+        topCut.rotation.x = -Math.PI / 2;
+        sliceG.add(topCut);
+        const botCut = new THREE.Mesh(new THREE.CircleGeometry(1.2, 36), matCutFace);
+        botCut.position.y = -0.551;
+        botCut.rotation.x = Math.PI / 2;
+        sliceG.add(botCut);
+      }
+      sliceG.rotation.z = Math.PI / 2;
+      slicedCarrotGroup.add(sliceG);
+      sliceMeshes.push(sliceG);
+    }
+
+    // 3D Brand Typography: MiniMax M3.1 flash
+    const brand3DGroup = new THREE.Group();
+    brand3DGroup.position.set(0, 2.2, 1.6);
+    const brandMiniMax = create3DText('MiniMax', 0.85, 0.25, 0xffffff);
+    brandMiniMax.position.set(0, 1.1, 0);
+    brand3DGroup.add(brandMiniMax);
+    const brandM31 = create3DText('M3.1', 1.85, 0.55, 0xffedd5);
+    brandM31.position.set(0, -0.2, 0);
+    brand3DGroup.add(brandM31);
+    const brandFlash = create3DText('flash', 0.95, 0.28, 0xf97316);
+    brandFlash.position.set(0, -1.3, 0);
+    brand3DGroup.add(brandFlash);
+    slicedCarrotGroup.add(brand3DGroup);
+
+    // "现在，它有了名字"
+    const namingTitleTex = makeCanvasTexture((ctx, w, h) => {
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 84px "PingFang SC", sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText('现在，它有了名字', w - 40, h/2 + 28);
+    }, 1024, 256);
+    const namingTitlePlane = new THREE.Mesh(
+      new THREE.PlaneGeometry(6, 1.5),
+      new THREE.MeshBasicMaterial({ map: namingTitleTex, transparent: true })
+    );
+    namingTitlePlane.position.set(4.0, 5.2, 0);
+    slicedCarrotGroup.add(namingTitlePlane);
+
+    // [4] Scene 4: 73.7% & Tumbling Candy Blocks
+    const capabilitiesGroup = new THREE.Group();
+    capabilitiesGroup.visible = false;
+    sceneRoot.add(capabilitiesGroup);
+
+    const capFloor = new THREE.Mesh(new THREE.BoxGeometry(32, 1, 24), matFloor);
+    capFloor.position.y = -0.5;
+    capFloor.receiveShadow = true;
+    capabilitiesGroup.add(capFloor);
+
+    // "它能做什么"
+    const capTitleTex = makeCanvasTexture((ctx, w, h) => {
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 96px "PingFang SC", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('它能做什么', w/2, h/2 + 32);
+    }, 1024, 256);
+    const capTitlePlane = new THREE.Mesh(
+      new THREE.PlaneGeometry(6, 1.5),
+      new THREE.MeshBasicMaterial({ map: capTitleTex, transparent: true })
+    );
+    capTitlePlane.position.set(0, 5.5, -2);
+    capabilitiesGroup.add(capTitlePlane);
+
+    // 120+ Tumbling Rounded Candy Blocks
+    const candyBlocks = new THREE.Group();
+    const cMat1 = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.45 });
+    const cMat2 = new THREE.MeshStandardMaterial({ color: 0xfed7aa, roughness: 0.55 });
+    for (let i = 0; i < 110; i++) {
+      const b = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.48, 0.48), i % 2 === 0 ? cMat1 : cMat2);
+      b.position.set(
+        (Math.random() - 0.5) * 18,
+        0.25 + Math.random() * 0.4,
+        (Math.random() - 0.5) * 10
+      );
+      b.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+      b.castShadow = true;
+      b.receiveShadow = true;
+      candyBlocks.add(b);
+    }
+    capabilitiesGroup.add(candyBlocks);
+
+    // Giant 3D Numerals: 73.7%
+    const text737_3D = create3DText('73.7%', 2.6, 0.75, 0xf97316);
+    text737_3D.position.set(-1.8, 1.5, 2.5);
+    capabilitiesGroup.add(text737_3D);
+
+    // Dark Pedestal with 3D text
+    const pedGroup = new THREE.Group();
+    pedGroup.position.set(5.8, 1.0, -1);
+    const pedBase = new THREE.Mesh(new THREE.BoxGeometry(5.8, 1.4, 1.6), matMetal);
+    pedBase.castShadow = true;
+    pedGroup.add(pedBase);
+
+    const pedAutoText = create3DText('Agentic Automation', 0.45, 0.15, 0xfed7aa);
+    pedAutoText.position.set(0, 0.35, 0.85);
+    pedGroup.add(pedAutoText);
+
+    const ped762Text = create3DText('76.2', 0.95, 0.25, 0xf43f5e);
+    ped762Text.position.set(0, -0.2, 0.85);
+    pedGroup.add(ped762Text);
+    capabilitiesGroup.add(pedGroup);
+
+    // [5] Scene 5: Computer Use & Frosted Glass Card
+    const computerUseGroup = new THREE.Group();
+    computerUseGroup.visible = false;
+    sceneRoot.add(computerUseGroup);
+
+    // Rounded Box Glass Card
+    function createRoundedBox(w, h, d, r) {
+      const shape = new THREE.Shape();
+      shape.moveTo(-w/2 + r, -h/2);
+      shape.lineTo(w/2 - r, -h/2);
+      shape.quadraticCurveTo(w/2, -h/2, w/2, -h/2 + r);
+      shape.lineTo(w/2, h/2 - r);
+      shape.quadraticCurveTo(w/2, h/2, w/2 - r, h/2);
+      shape.lineTo(-w/2 + r, h/2);
+      shape.quadraticCurveTo(-w/2, h/2, -w/2, h/2 - r);
+      shape.lineTo(-w/2, -h/2 + r);
+      shape.quadraticCurveTo(-w/2, -h/2, -w/2 + r, -h/2);
+
+      return new THREE.ExtrudeGeometry(shape, {
+        depth: d,
+        bevelEnabled: true,
+        bevelThickness: 0.1,
+        bevelSize: 0.08,
+        bevelSegments: 4
+      });
+    }
+
+    const glassCardGeo = createRoundedBox(8.4, 5.4, 0.35, 0.45);
+    const glassCard = new THREE.Mesh(glassCardGeo, matGlass);
+    glassCard.castShadow = true;
+    glassCard.receiveShadow = true;
+    computerUseGroup.add(glassCard);
+
+    // Glass Card 3D Extruded Content
+    const cuTitle3D = create3DText('Computer Use', 0.95, 0.28, 0xea580c);
+    cuTitle3D.position.set(0, 1.4, 0.3);
+    computerUseGroup.add(cuTitle3D);
+
+    const cuScore3D = create3DText('61.7', 2.3, 0.65, 0xf97316);
+    cuScore3D.position.set(0, -0.4, 0.3);
+    computerUseGroup.add(cuScore3D);
+
+    const cuSub3D = create3DText('OSWorld V2', 0.48, 0.15, 0x64748b);
+    cuSub3D.position.set(0, -1.8, 0.3);
+    computerUseGroup.add(cuSub3D);
+
+    // 3D Orange Mouse Cursor
+    const cursorGroup = new THREE.Group();
+    const cursorShape = new THREE.Shape();
+    cursorShape.moveTo(0, 0);
+    cursorShape.lineTo(0, -1.8);
+    cursorShape.lineTo(0.5, -1.35);
+    cursorShape.lineTo(1.0, -2.35);
+    cursorShape.lineTo(1.4, -2.15);
+    cursorShape.lineTo(0.9, -1.15);
+    cursorShape.lineTo(1.55, -1.15);
+    cursorShape.closePath();
+
+    const cursorExtrude = new THREE.ExtrudeGeometry(cursorShape, {
+      depth: 0.22,
+      bevelEnabled: true,
+      bevelThickness: 0.06,
+      bevelSize: 0.05
+    });
+    const cursorMesh = new THREE.Mesh(cursorExtrude, new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.3 }));
+    cursorMesh.scale.set(0.7, 0.7, 0.7);
+    cursorMesh.castShadow = true;
+    cursorGroup.add(cursorMesh);
+    cursorGroup.position.set(2.8, -1.2, 0.8);
+    computerUseGroup.add(cursorGroup);
+
+    // [6] Scene 6: Cybersecurity 82% Shield
+    const cybersecurityGroup = new THREE.Group();
+    cybersecurityGroup.visible = false;
+    sceneRoot.add(cybersecurityGroup);
+
+    const shieldShape = new THREE.Shape();
+    shieldShape.moveTo(-1.8, 2.0);
+    shieldShape.lineTo(1.8, 2.0);
+    shieldShape.quadraticCurveTo(1.8, -0.8, 0, -2.5);
+    shieldShape.quadraticCurveTo(-1.8, -0.8, -1.8, 2.0);
+
+    const shieldOuter = new THREE.Mesh(
+      new THREE.ExtrudeGeometry(shieldShape, { depth: 0.6, bevelEnabled: true, bevelThickness: 0.14, bevelSize: 0.12 }),
+      matShieldDark
+    );
+    shieldOuter.scale.set(1.12, 1.12, 1.0);
+    shieldOuter.position.set(0, 1.2, -0.06);
+    shieldOuter.castShadow = true;
+    cybersecurityGroup.add(shieldOuter);
+
+    const shieldInner = new THREE.Mesh(
+      new THREE.ExtrudeGeometry(shieldShape, { depth: 0.5, bevelEnabled: true, bevelThickness: 0.08, bevelSize: 0.08 }),
+      matShieldGreen
+    );
+    shieldInner.position.set(0, 1.2, 0);
+    shieldInner.castShadow = true;
+    cybersecurityGroup.add(shieldInner);
+
+    // 3D 82% Numerals
+    const text82_3D = create3DText('82%', 2.2, 0.65, 0xef4444);
+    text82_3D.position.set(0, 1.3, 0.65);
+    cybersecurityGroup.add(text82_3D);
+
+    // Wooden Display Pedestal
+    const cyberPed = new THREE.Mesh(new THREE.BoxGeometry(6.6, 0.9, 1.6), matFloor);
+    cyberPed.position.set(0, -1.8, 0);
+    cyberPed.castShadow = true;
+    cybersecurityGroup.add(cyberPed);
+
+    const cyberSec3D = create3DText('Cybersecurity', 0.65, 0.18, 0xb45309);
+    cyberSec3D.position.set(0, -1.6, 0.85);
+    cybersecurityGroup.add(cyberSec3D);
+
+    // [7] Scene 7: Fast & Cheap (200+ token/s)
+    const fastCheapGroup = new THREE.Group();
+    fastCheapGroup.visible = false;
+    sceneRoot.add(fastCheapGroup);
+
+    // Title 3D: 快，而且便宜
+    const fastTitleTex = makeCanvasTexture((ctx, w, h) => {
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 88px "PingFang SC", sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('快，而且便宜', 100, 120);
+
+      ctx.fillStyle = '#f43f5e';
+      ctx.font = 'bold 64px -apple-system, sans-serif';
+      ctx.fillText('输入 $0.15 · 输出 $0.60', 100, 260);
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fillText('每百万 token', 800, 260);
+
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = 'bold 54px -apple-system, sans-serif';
+      ctx.fillText('对比上一代', 100, 360);
+      ctx.fillText('智能体任务成本降低', 100, 440);
+      ctx.fillStyle = '#f43f5e';
+      ctx.font = '900 72px -apple-system, sans-serif';
+      ctx.fillText('70%', 630, 440);
+    }, 1400, 600);
+
+    const fastTitlePlane = new THREE.Mesh(
+      new THREE.PlaneGeometry(9.8, 4.2),
+      new THREE.MeshBasicMaterial({ map: fastTitleTex, transparent: true })
+    );
+    fastTitlePlane.position.set(-1.0, -0.6, 0);
+    fastCheapGroup.add(fastTitlePlane);
+
+    // 3D 200+ token / 秒
+    const text200_3D = create3DText('200+ token / s', 1.45, 0.42, 0xf43f5e);
+    text200_3D.position.set(-2.2, 1.3, 0);
+    fastCheapGroup.add(text200_3D);
+
+    // Darting Mini Rocket
+    const dartingRocket = createSculptedCarrotRocket();
+    dartingRocket.scale.set(0.65, 0.65, 0.65);
+    dartingRocket.rotation.z = -Math.PI / 2;
+    fastCheapGroup.add(dartingRocket);
+
+    const dartingSmoke = new THREE.Group();
+    for (let i = 0; i < 10; i++) {
+      const p = new THREE.Mesh(new THREE.SphereGeometry(0.38 + i * 0.06, 14, 14), matCloud);
+      p.position.set(-i * 0.9, (Math.random() - 0.5) * 0.35, 0);
+      dartingSmoke.add(p);
+    }
+    dartingSmoke.position.set(0, 1.8, 0);
+    fastCheapGroup.add(dartingSmoke);
+
+    // Ground Ring
+    const groundRing = new THREE.Mesh(
+      new THREE.TorusGeometry(3.6, 0.12, 16, 64),
+      new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 })
+    );
+    groundRing.rotation.x = Math.PI / 2;
+    groundRing.position.set(0, -2.6, 0);
+    fastCheapGroup.add(groundRing);
+
+    // [8] Scene 8: Outro & Launch Climax
+    const outroGroup = new THREE.Group();
+    outroGroup.visible = false;
+    sceneRoot.add(outroGroup);
+
+    const outroGlobe = createEarthGlobe();
+    outroGlobe.scale.set(0.7, 0.7, 0.7);
+    outroGlobe.position.set(-6.5, 3.2, 0);
+    outroGroup.add(outroGlobe);
+
+    const outroRocket = createSculptedCarrotRocket();
+    outroRocket.scale.set(0.75, 0.75, 0.75);
+    outroGroup.add(outroRocket);
+
+    const outroBillboardTex = makeCanvasTexture((ctx, w, h) => {
+      // 现已上线
+      ctx.fillStyle = '#f43f5e';
+      ctx.font = '900 170px "PingFang SC", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.shadowColor = 'rgba(0,0,0,0.3)';
+      ctx.shadowBlur = 14;
+      ctx.fillText('现已上线', w/2, 170);
+
+      // Soundwave icon
+      ctx.fillStyle = '#94a3b8';
+      for (let i = -4; i <= 4; i++) {
+        const barH = 14 + Math.abs(Math.sin(i * 0.8)) * 36;
+        ctx.fillRect(w/2 + i * 16 - 4, 235 - barH/2, 8, barH);
+      }
+
+      // Specs Matrix
+      ctx.font = 'bold 54px -apple-system, sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText('MiniMax M3.1 Flash', w/2, 310);
+
+      ctx.font = '500 40px "PingFang SC", sans-serif';
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fillText('10 月 23 日开源权重', w/2, 380);
+
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillText('MiniMax Code 订阅用户', w/2, 440);
+      ctx.fillText('10 月 25 日前不限量', w/2, 500);
+
+      ctx.fillText('M Plan 新订首月 5 折，', w/2, 560);
+      ctx.fillText('10 月 31 日截止', w/2, 620);
+
+      // URL
+      ctx.font = 'bold 38px monospace';
+      ctx.fillStyle = '#93c5fd';
+      ctx.fillText('platform.minimax.io', w/2, 690);
+    }, 1200, 800);
+
+    const outroPlane = new THREE.Mesh(
+      new THREE.PlaneGeometry(8.6, 5.7),
+      new THREE.MeshBasicMaterial({ map: outroBillboardTex, transparent: true })
+    );
+    outroPlane.position.set(-0.2, -0.2, 0);
+    outroGroup.add(outroPlane);
+
+    // --- Deterministic Timeline Renderer ---
+    window.renderAtTime = function(t) {
+      t = Math.max(0, Math.min(t, TOTAL_DURATION));
+
+      // Reset visibilities
+      launchpad.visible = false;
+      rocketPad.visible = false;
+      countdown3D.visible = false;
+      anonTitlePlane.visible = false;
+      launchSmoke.visible = false;
+      scene2Group.visible = false;
+      slicedCarrotGroup.visible = false;
+      capabilitiesGroup.visible = false;
+      computerUseGroup.visible = false;
+      cybersecurityGroup.visible = false;
+      fastCheapGroup.visible = false;
+      outroGroup.visible = false;
+
+      // 1. Scene 1: Launchpad & Countdown (0.0s - 4.5s)
+      if (t < 4.5) {
+        launchpad.visible = true;
+        rocketPad.visible = true;
+        countdown3D.visible = true;
+        anonTitlePlane.visible = true;
+
+        if (t < 2.8) {
+          // Subtle idle floating & camera slow push
+          rocketPad.position.set(0, 3.2, 0);
+          rocketPad.rotation.set(0, t * 0.22, 0);
+          camera.position.set(Math.sin(t * 0.12) * 1.8, 3.4, 15.5 - t * 0.6);
+          camera.lookAt(0, 3.2, 0);
+        } else {
+          // Launch ignition & ascend
+          const lt = t - 2.8;
+          launchSmoke.visible = true;
+          launchSmoke.scale.setScalar(1 + lt * 1.8);
+          rocketPad.position.y = 3.2 + Math.pow(lt * 2.8, 2.2);
+          rocketPad.position.x = Math.sin(lt * 5) * 0.05;
+          camera.position.set(0, 3.4 + lt * 2.2, 13.5);
+          camera.lookAt(0, rocketPad.position.y * 0.75, 0);
+        }
+      }
+
+      // 2. Scene 2: OpenRouter #1 Ascend (4.5s - 8.0s)
+      else if (t < 8.0) {
+        scene2Group.visible = true;
+        const relT = (t - 4.5) / 3.5;
+
+        // In Scene 2, the rocket flies upward through the clouds with OpenRouter text
+        rocketPad.visible = true;
+        rocketPad.position.set(1.5, -4 + relT * 12, 0);
+        rocketPad.rotation.set(0, relT * 2.0, 0.15);
+
+        camera.position.set(0, 2.8, 13);
+        camera.lookAt(0, 2.0, 0);
+      }
+
+      // 3. Scene 3: Sliced Carrot & Naming (8.0s - 11.5s)
+      else if (t < 11.5) {
+        slicedCarrotGroup.visible = true;
+        const relT = (t - 8.0) / 3.5;
+
+        // Earth spin
+        earthGlobe.rotation.y = relT * 1.6;
+
+        // Slices separation
+        const sep = Math.min(1.0, relT * 1.8) * 3.6;
+        sliceMeshes[0].position.set(-sep * 1.35, 0, 0);
+        sliceMeshes[1].position.set(-sep * 0.45, 0, 0);
+        sliceMeshes[2].position.set(sep * 0.45, 0, 0);
+        sliceMeshes[3].position.set(sep * 1.35, 0, 0);
+
+        // Orbital dolly camera
+        const camAng = (relT - 0.5) * 0.45;
+        camera.position.set(Math.sin(camAng) * 11.5, 1.6, Math.cos(camAng) * 11.5);
+        camera.lookAt(0, 0.6, 0);
+      }
+
+      // 4. Scene 4: 73.7% & Tumbling Candy Blocks (11.5s - 14.5s)
+      else if (t < 14.5) {
+        capabilitiesGroup.visible = true;
+        const relT = (t - 11.5) / 3.0;
+
+        if (relT < 0.55) {
+          camera.position.set(-1.8, 3.4, 11.5);
+          camera.lookAt(-1.8, 1.4, 0);
+        } else {
+          const panT = (relT - 0.55) / 0.45;
+          const px = -1.8 + panT * 7.2;
+          camera.position.set(px, 3.4, 11.5);
+          camera.lookAt(px, 1.2, 0);
+        }
+      }
+
+      // 5. Scene 5: Computer Use & Frosted Glass (14.5s - 18.0s)
+      else if (t < 18.0) {
+        computerUseGroup.visible = true;
+        const relT = (t - 14.5) / 3.5;
+
+        // Entrance tilt
+        const enterT = Math.min(1.0, relT * 2.2);
+        glassCard.position.y = -4 + enterT * 4;
+        cuTitle3D.position.y = 1.4 + (glassCard.position.y);
+        cuScore3D.position.y = -0.4 + (glassCard.position.y);
+        cuSub3D.position.y = -1.8 + (glassCard.position.y);
+
+        // Cursor glide & click
+        if (relT < 0.5) {
+          cursorGroup.position.set(4.8 - relT * 4.0, -3.2 + relT * 3.8, 0.8);
+        } else if (relT < 0.72) {
+          const clickT = (relT - 0.5) / 0.22;
+          const s = 1.0 - Math.sin(clickT * Math.PI) * 0.25;
+          cursorGroup.scale.set(s * 0.7, s * 0.7, s * 0.7);
+          cursorGroup.position.set(2.8, -1.2, 0.8);
+        } else {
+          cursorGroup.position.set(2.8, -1.2, 0.8);
+        }
+
+        camera.position.set(0, 0, 12.0);
+        camera.lookAt(0, 0, 0);
+      }
+
+      // 6. Scene 6: Cybersecurity 82% Shield (18.0s - 21.0s)
+      else if (t < 21.0) {
+        cybersecurityGroup.visible = true;
+        const relT = (t - 18.0) / 3.0;
+
+        const riseT = Math.min(1.0, relT * 2.2);
+        const yPos = -3.2 + riseT * 4.4;
+        shieldInner.position.y = yPos;
+        shieldOuter.position.y = yPos;
+        text82_3D.position.y = yPos + 0.1;
+
+        camera.position.set(0, 0.2, 11.5);
+        camera.lookAt(0, 0, 0);
+      }
+
+      // 7. Scene 7: Fast & Cheap (21.0s - 23.5s)
+      else if (t < 23.5) {
+        fastCheapGroup.visible = true;
+        const relT = (t - 21.0) / 2.5;
+
+        dartingRocket.position.set(-8.5 + relT * 19, 1.8, 0);
+        dartingSmoke.position.x = dartingRocket.position.x - 1.6;
+
+        camera.position.set(0, 0, 12.8);
+        camera.lookAt(0, 0, 0);
+      }
+
+      // 8. Scene 8: Outro & Launch Climax (23.5s - 26.08s)
+      else {
+        outroGroup.visible = true;
+        const relT = (t - 23.5) / 2.58;
+
+        outroGlobe.rotation.y = relT * 2.4;
+
+        const orbitAngle = relT * Math.PI * 2.4;
+        outroRocket.position.set(
+          4.6 + Math.cos(orbitAngle) * 2.4,
+          -0.2 + Math.sin(orbitAngle) * 1.5,
+          Math.sin(orbitAngle) * 2.0
+        );
+        outroRocket.rotation.y = -orbitAngle;
+        outroRocket.rotation.z = -Math.PI / 4;
+
+        camera.position.set(0, 0, 13.2);
+        camera.lookAt(0, 0, 0);
+      }
+
+      renderer.render(scene, camera);
+    };
+
+    // --- Interactive Playback UI ---
+    let isPlaying = false;
+    let startTime = 0;
+    let pausedAt = 0;
+    const playBtn = document.getElementById('play-btn');
+    const timeSlider = document.getElementById('time-slider');
+    const timeDisplay = document.getElementById('time-display');
+    const soundtrack = document.getElementById('soundtrack');
+
+    function formatTime(s) {
+      const mins = Math.floor(s / 60);
+      const secs = (s % 60).toFixed(2);
+      return `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+    }
+
+    function update() {
+      if (isPlaying) {
+        const elapsed = (performance.now() - startTime) / 1000;
+        if (elapsed >= TOTAL_DURATION) {
+          isPlaying = false;
+          playBtn.innerText = '播放';
+          pausedAt = 0;
+          soundtrack.pause();
+          soundtrack.currentTime = 0;
+        } else {
+          timeSlider.value = elapsed;
+          timeDisplay.innerText = `${formatTime(elapsed)} / ${formatTime(TOTAL_DURATION)}`;
+          window.renderAtTime(elapsed);
+          requestAnimationFrame(update);
+        }
+      }
+    }
+
+    playBtn.addEventListener('click', () => {
+      if (isPlaying) {
+        isPlaying = false;
+        playBtn.innerText = '播放';
+        pausedAt = parseFloat(timeSlider.value);
+        soundtrack.pause();
+      } else {
+        isPlaying = true;
+        playBtn.innerText = '暂停';
+        startTime = performance.now() - pausedAt * 1000;
+        soundtrack.currentTime = pausedAt;
+        soundtrack.play().catch(() => {});
+        requestAnimationFrame(update);
+      }
+    });
+
+    timeSlider.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      pausedAt = val;
+      startTime = performance.now() - val * 1000;
+      timeDisplay.innerText = `${formatTime(val)} / ${formatTime(TOTAL_DURATION)}`;
+      soundtrack.currentTime = val;
+      window.renderAtTime(val);
+    });
+
+    document.getElementById('reset-btn').addEventListener('click', () => {
+      isPlaying = false;
+      playBtn.innerText = '播放';
+      pausedAt = 0;
+      timeSlider.value = 0;
+      timeDisplay.innerText = `00:00.00 / ${formatTime(TOTAL_DURATION)}`;
+      soundtrack.pause();
+      soundtrack.currentTime = 0;
+      window.renderAtTime(0);
+    });
+
+    // Initial render at t = 0
+    window.renderAtTime(0);
+  </script>
+</body>
+</html>

@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>吉卜力剧场版：绿苔巨像的苏醒 - 60s 电影级手绘 2D 动漫 (Studio Ghibli Masterpiece)</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #04070a;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Cinzel', 'Noto Serif SC', 'Songti SC', serif;
+      color: #ede2d1;
+    }
+
+    /* 电影宽银幕视窗 */
+    #cinema-screen {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      max-width: 1920px;
+      max-height: 1080px;
+      aspect-ratio: 16 / 9;
+      background: #091217;
+      overflow: hidden;
+      box-shadow: 0 30px 100px rgba(0,0,0,0.95);
+    }
+
+    /* 舞台主画布 */
+    #art-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* 35mm 手绘赛璐珞胶片颗粒 */
+    #film-grain {
+      position: absolute;
+      top: -100%;
+      left: -100%;
+      width: 300%;
+      height: 300%;
+      background-image: 
+        radial-gradient(rgba(255, 230, 180, 0.08) 1px, transparent 0),
+        radial-gradient(rgba(10, 20, 25, 0.12) 1px, transparent 0);
+      background-size: 3px 3px, 5px 5px;
+      opacity: 0.6;
+      mix-blend-mode: overlay;
+      pointer-events: none;
+      animation: grainJitter 0.1s steps(2) infinite;
+      z-index: 10;
+    }
+
+    @keyframes grainJitter {
+      0% { transform: translate(0, 0); }
+      25% { transform: translate(-3px, 2px); }
+      50% { transform: translate(2px, -3px); }
+      75% { transform: translate(-2px, -2px); }
+      100% { transform: translate(3px, 3px); }
+    }
+
+    /* 电影上下遮幅 Letterbox */
+    .cinemascope {
+      position: absolute;
+      left: 0;
+      width: 100%;
+      height: 8.5%;
+      background: #020406;
+      z-index: 20;
+      pointer-events: none;
+    }
+    .top-bar { top: 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .bottom-bar { bottom: 0; border-top: 1px solid rgba(255,255,255,0.04); }
+
+    /* 吉卜力经典电影标题字幕 */
+    #title-overlay {
+      position: absolute;
+      top: 16%;
+      left: 9%;
+      z-index: 25;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 2.5s cubic-bezier(0.16, 1, 0.3, 1);
+      text-shadow: 0 3px 25px rgba(0,0,0,0.95);
+    }
+    #title-overlay h1 {
+      font-size: 3rem;
+      font-weight: 300;
+      letter-spacing: 0.45em;
+      color: #f7efe2;
+      margin-bottom: 0.4rem;
+    }
+    #title-overlay p {
+      font-size: 1.05rem;
+      letter-spacing: 0.28em;
+      color: #cbbca5;
+      font-style: italic;
+    }
+
+    #epilogue-overlay {
+      position: absolute;
+      top: 42%;
+      width: 100%;
+      text-align: center;
+      z-index: 25;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 3s ease;
+      text-shadow: 0 4px 35px rgba(0,0,0,0.95);
+    }
+    #epilogue-overlay h2 {
+      font-size: 3.2rem;
+      font-weight: 300;
+      letter-spacing: 0.5em;
+      color: #fff9ed;
+      margin-bottom: 1rem;
+    }
+    #epilogue-overlay p {
+      font-size: 1.25rem;
+      letter-spacing: 0.35em;
+      color: #e2d6c3;
+    }
+
+    /* 控制条 UI */
+    #control-panel {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      background: rgba(14, 22, 28, 0.8);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 235, 195, 0.2);
+      padding: 10px 26px;
+      border-radius: 40px;
+      box-shadow: 0 12px 45px rgba(0,0,0,0.75);
+      transition: all 0.3s ease;
+    }
+    #control-panel:hover {
+      background: rgba(14, 22, 28, 0.95);
+      border-color: rgba(255, 220, 150, 0.4);
+    }
+
+    .ctrl-btn {
+      background: none;
+      border: none;
+      color: #ede2d1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      outline: none;
+    }
+    .ctrl-btn:hover {
+      color: #ffd88a;
+      transform: scale(1.12);
+    }
+
+    #timeline-track {
+      width: 360px;
+      height: 6px;
+      background: rgba(255,255,255,0.18);
+      border-radius: 3px;
+      cursor: pointer;
+      position: relative;
+    }
+    #timeline-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #d4a359, #ffeaa5);
+      border-radius: 3px;
+      box-shadow: 0 0 14px rgba(255, 225, 140, 0.8);
+    }
+
+    #time-label {
+      font-size: 0.85rem;
+      font-family: monospace;
+      letter-spacing: 0.1em;
+      color: #d0c0a6;
+      min-width: 92px;
+    }
+
+    /* 启动封面遮罩 */
+    #start-curtain {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 50% 50%, rgba(14, 24, 30, 0.88) 0%, rgba(4, 7, 10, 0.98) 100%);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      z-index: 40;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      transition: opacity 0.8s ease, visibility 0.8s;
+    }
+    #start-curtain.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .hero-orb {
+      width: 98px;
+      height: 98px;
+      border: 2px solid rgba(245, 215, 160, 0.7);
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 24px;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 0 40px rgba(212, 163, 89, 0.3);
+    }
+    #start-curtain:hover .hero-orb {
+      border-color: #ffd88a;
+      transform: scale(1.1);
+      box-shadow: 0 0 65px rgba(255, 218, 140, 0.6);
+    }
+    .hero-play-arrow {
+      width: 0;
+      height: 0;
+      border-top: 16px solid transparent;
+      border-bottom: 16px solid transparent;
+      border-left: 26px solid #fdf5ea;
+      margin-left: 6px;
+    }
+    .hero-title {
+      font-size: 2.4rem;
+      letter-spacing: 0.45em;
+      font-weight: 300;
+      color: #f7efe2;
+      margin-bottom: 8px;
+    }
+    .hero-sub {
+      font-size: 1rem;
+      letter-spacing: 0.28em;
+      color: #9cb0ba;
+    }
+    .hero-tag {
+      margin-top: 26px;
+      font-size: 0.75rem;
+      letter-spacing: 0.22em;
+      border: 1px solid rgba(220, 175, 95, 0.45);
+      padding: 6px 18px;
+      border-radius: 20px;
+      color: #e5b86b;
+      background: rgba(220, 175, 95, 0.1);
+    }
+  </style>
+</head>
+<body>
+
+<div id="cinema-screen">
+  <!-- 遮幅黑边 -->
+  <div class="cinemascope top-bar"></div>
+  <div class="cinemascope bottom-bar"></div>
+
+  <!-- 核心手绘动漫渲染画布 -->
+  <canvas id="art-canvas"></canvas>
+
+  <!-- 35mm 胶片噪点与赛璐珞微颤 -->
+  <div id="film-grain"></div>
+
+  <!-- 电影标题 -->
+  <div id="title-overlay">
+    <h1>绿 苔 巨 像</h1>
+    <p>THE AWAKENING OF THE MOSS COLOSSUS</p>
+  </div>
+
+  <!-- 尾声诗意卡片 -->
+  <div id="epilogue-overlay">
+    <h2>破 晓 腾 飞</h2>
+    <p>“穿透尘封的记忆，古老的守护者乘晨曦而去。”</p>
+  </div>
+
+  <!-- 播放控制器 -->
+  <div id="control-panel">
+    <button class="ctrl-btn" id="playBtn" title="播放/暂停">
+      <svg id="playIcon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+      </svg>
+    </button>
+    <div id="timeline-track">
+      <div id="timeline-fill"></div>
+    </div>
+    <div id="time-label">00:00 / 01:00</div>
+    <button class="ctrl-btn" id="audioBtn" title="静音切换">
+      <svg id="audioIcon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+      </svg>
+    </button>
+    <button class="ctrl-btn" id="fsBtn" title="全屏">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- 启封大遮罩 -->
+  <div id="start-curtain">
+    <div class="hero-orb">
+      <div class="hero-play-arrow"></div>
+    </div>
+    <div class="hero-title">吉卜力剧场版：巨像的苏醒</div>
+    <div class="hero-sub">STUDIO GHIBLI MASTERPIECE · 60s CODE VIDEO</div>
+    <div class="hero-tag">男鹿和雄水粉厚涂 · 纯正赛璐珞机甲 · 久石让质感原声拟音</div>
+  </div>
+</div>
+
+<script>
+/**
+ * ==================================================================
+ * 绿苔巨像 (The Slumbering Colossus)
+ * 极致吉卜力剧场版手绘 2D 动漫管线：
+ * 1. 男鹿和雄水粉厚涂背景：破晓晨曦梯度、神圣体积分形丁达尔圣光、水彩浸染古木群
+ * 2. 经典手绘赛璐珞机甲：手墨轮廓线、风化铸铁青铜氧化色、剥落红锈、高密度手绘青苔与雏菊、发光琥珀晶石核心
+ * 3. 灵动生态粒子系统：梳理羽毛与惊飞的小红鸟、重力崩落的泥土苔藓碎块、漫天旋转飘舞的金黄秋叶、赛璐珞升空烟云环
+ * 4. 纯代码 Web Audio 拟真配乐与物理拟音：森林轻风、FM鸟鸣、次声波震颤、金属应力扭曲、火箭喷射、久石让空灵钢琴和弦
+ * ==================================================================
+ */
+
+const DURATION = 60.0;
+let currentTime = 0;
+let isPlaying = false;
+let lastTimestamp = 0;
+let isMuted = false;
+
+const canvas = document.getElementById('art-canvas');
+const ctx = canvas.getContext('2d');
+
+const WIDTH = 1920;
+const HEIGHT = 1080;
+
+function setupCanvasResolution() {
+  canvas.width = WIDTH;
+  canvas.height = HEIGHT;
+}
+setupCanvasResolution();
+
+// UI 元素引用
+const startCurtain = document.getElementById('start-curtain');
+const playBtn = document.getElementById('playBtn');
+const playIcon = document.getElementById('playIcon');
+const timelineTrack = document.getElementById('timeline-track');
+const timelineFill = document.getElementById('timeline-fill');
+const timeLabel = document.getElementById('time-label');
+const audioBtn = document.getElementById('audioBtn');
+const fsBtn = document.getElementById('fsBtn');
+const titleOverlay = document.getElementById('title-overlay');
+const epilogueOverlay = document.getElementById('epilogue-overlay');
+
+/**
+ * ------------------------------------------------------------------
+ * 1. 纯代码 Web Audio 电影级声效与久石让式配乐合成器
+ * ------------------------------------------------------------------
+ */
+let actx = null;
+let masterGain = null;
+
+function initAudioSystem() {
+  if (actx) return;
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  actx = new AudioContext();
+  masterGain = actx.createGain();
+  masterGain.gain.setValueAtTime(0.85, actx.currentTime);
+  masterGain.connect(actx.destination);
+
+  // 森林微风拂叶背景白噪
+  const bufSize = actx.sampleRate * 4;
+  const buf = actx.createBuffer(1, bufSize, actx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1) * 0.14;
+  const noise = actx.createBufferSource();
+  noise.buffer = buf;
+  noise.loop = true;
+
+  const filter = actx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.setValueAtTime(360, actx.currentTime);
+
+  const gain = actx.createGain();
+  gain.gain.setValueAtTime(0.12, actx.currentTime);
+
+  noise.connect(filter);
+  filter.connect(gain);
+  gain.connect(masterGain);
+  noise.start();
+}
+
+// 调频 FM 翠鸟晨鸣
+function playBirdChirp(pitch = 2600) {
+  if (!actx || isMuted) return;
+  const now = actx.currentTime;
+  const carrier = actx.createOscillator();
+  const modulator = actx.createOscillator();
+  const modGain = actx.createGain();
+  const env = actx.createGain();
+
+  carrier.type = 'sine';
+  modulator.type = 'sine';
+  modulator.frequency.setValueAtTime(130, now);
+  modGain.gain.setValueAtTime(700, now);
+
+  carrier.frequency.setValueAtTime(pitch, now);
+  carrier.frequency.exponentialRampToValueAtTime(pitch * 1.35, now + 0.07);
+  carrier.frequency.exponentialRampToValueAtTime(pitch * 0.88, now + 0.17);
+
+  modulator.connect(modGain);
+  modGain.connect(carrier.frequency);
+
+  env.gain.setValueAtTime(0.001, now);
+  env.gain.linearRampToValueAtTime(0.09, now + 0.02);
+  env.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+
+  carrier.connect(env);
+  env.connect(masterGain);
+  carrier.start(now);
+  modulator.start(now);
+  carrier.stop(now + 0.25);
+  modulator.stop(now + 0.25);
+}
+
+// 40Hz 地壳次声波共振
+function playSubRumble() {
+  if (!actx || isMuted) return;
+  const now = actx.currentTime;
+  const osc = actx.createOscillator();
+  const gain = actx.createGain();
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(45, now);
+  osc.frequency.linearRampToValueAtTime(32, now + 3.2);
+
+  gain.gain.setValueAtTime(0.001, now);
+  gain.gain.linearRampToValueAtTime(0.42, now + 0.6);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 3.2);
+
+  osc.connect(gain);
+  gain.connect(masterGain);
+  osc.start(now);
+  osc.stop(now + 3.3);
+}
+
+// 金属关节形变与应力呻吟
+function playMetalStress() {
+  if (!actx || isMuted) return;
+  const now = actx.currentTime;
+  const osc = actx.createOscillator();
+  const g = actx.createGain();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(105, now);
+  osc.frequency.exponentialRampToValueAtTime(58, now + 1.8);
+  osc.frequency.linearRampToValueAtTime(145, now + 3.2);
+
+  const bp = actx.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.setValueAtTime(360, now);
+  bp.Q.setValueAtTime(4.8, now);
+
+  g.gain.setValueAtTime(0.001, now);
+  g.gain.linearRampToValueAtTime(0.24, now + 0.5);
+  g.gain.exponentialRampToValueAtTime(0.001, now + 3.4);
+
+  osc.connect(bp);
+  bp.connect(g);
+  g.connect(masterGain);
+  osc.start(now);
+  osc.stop(now + 3.5);
+}
+
+// 火箭引擎点火与久石让式 D 大调钢琴清澈终曲
+function playIgnitionAndTheme() {
+  if (!actx || isMuted) return;
+  const now = actx.currentTime;
+
+  // 1. 点火爆烈低音
+  const osc = actx.createOscillator();
+  const g = actx.createGain();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(70, now);
+  osc.frequency.exponentialRampToValueAtTime(210, now + 3.0);
+  osc.frequency.exponentialRampToValueAtTime(42, now + 8.0);
+
+  g.gain.setValueAtTime(0.01, now);
+  g.gain.linearRampToValueAtTime(0.65, now + 0.8);
+  g.gain.exponentialRampToValueAtTime(0.001, now + 8.5);
+
+  osc.connect(g);
+  g.connect(masterGain);
+  osc.start(now);
+  osc.stop(now + 9.0);
+
+  // 2. 宛如久石让电影原声的晨曦灵动和弦 (Dmaj9: D4, F#4, A4, C#5, E5)
+  const pianoNotes = [293.66, 369.99, 440.0, 554.37, 659.25];
+  pianoNotes.forEach((freq, idx) => {
+    const o = actx.createOscillator();
+    const gn = actx.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(freq, now + 4.2 + idx * 0.28);
+
+    gn.gain.setValueAtTime(0.001, now + 4.2 + idx * 0.28);
+    gn.gain.linearRampToValueAtTime(0.07, now + 4.2 + idx * 0.28 + 0.7);
+    gn.gain.exponentialRampToValueAtTime(0.0001, now + 4.2 + idx * 0.28 + 7.5);
+
+    o.connect(gn);
+    gn.connect(masterGain);
+    o.start(now + 4.2 + idx * 0.28);
+    o.stop(now + 4.2 + idx * 0.28 + 8.0);
+  });
+}
+
+/**
+ * ------------------------------------------------------------------
+ * 2. 动效实体系统 (小红鸟、漫天旋转金叶、崩落泥块、喷射气浪环)
+ * ------------------------------------------------------------------
+ */
+
+// 1. 落在机甲肩头的小红鸟 (Red Robin)
+class RobinBird {
+  constructor() {
+    this.reset();
+  }
+  reset() {
+    this.x = 1170; // 停在右肩甲生锈铆钉上
+    this.y = 535;
+    this.isFlown = false;
+    this.wingCycle = 0;
+    this.vx = 0;
+    this.vy = 0;
+    this.headBob = 0;
+    this.bobTimer = 0;
+  }
+  takeFlight() {
+    this.isFlown = true;
+    this.vx = -6.5;
+    this.vy = -9.0;
+  }
+  update(t) {
+    if (!this.isFlown) {
+      this.bobTimer += 0.06;
+      this.headBob = Math.sin(this.bobTimer) > 0.85 ? 2.5 : 0;
+    } else {
+      this.x += this.vx;
+      this.y += this.vy;
+      this.vy += 0.12; // 真实飞掠弧线
+      this.wingCycle += 0.55;
+    }
+  }
+  draw(ctx, robotOffsetY = 0) {
+    ctx.save();
+    const curY = this.isFlown ? this.y : this.y + robotOffsetY;
+    ctx.translate(this.x, curY);
+
+    if (!this.isFlown) {
+      // 栖息原画状态：饱满灵动的手绘小红鸟
+      // 尾羽
+      ctx.fillStyle = '#3a2b22';
+      ctx.beginPath();
+      ctx.moveTo(-8, 3);
+      ctx.lineTo(-18, 9);
+      ctx.lineTo(-12, 1);
+      ctx.closePath();
+      ctx.fill();
+
+      // 躯体 (朱砂红与栗棕渐变)
+      ctx.fillStyle = '#bd462a';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 11, 8, -0.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 胸腹暖白绒毛
+      ctx.fillStyle = '#f2e5d0';
+      ctx.beginPath();
+      ctx.ellipse(3, 3, 7, 5, -0.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 头部
+      ctx.fillStyle = '#453328';
+      ctx.beginPath();
+      ctx.arc(8, -5 + this.headBob, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 嫩黄小嘴
+      ctx.fillStyle = '#e5a528';
+      ctx.beginPath();
+      ctx.moveTo(13, -5 + this.headBob);
+      ctx.lineTo(19, -4 + this.headBob);
+      ctx.lineTo(13, -1 + this.headBob);
+      ctx.closePath();
+      ctx.fill();
+
+      // 眼睛
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(10, -6 + this.headBob, 1.8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#111111';
+      ctx.beginPath();
+      ctx.arc(10.5, -6 + this.headBob, 1.0, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // 惊飞振翅状态 (大展翼)
+      const wingHeight = Math.sin(this.wingCycle) * 20;
+      ctx.fillStyle = '#3a2a20';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 13, 6, Math.atan2(this.vy, this.vx), 0, Math.PI * 2);
+      ctx.fill();
+
+      // 红色双翼
+      ctx.fillStyle = '#a83c24';
+      ctx.beginPath();
+      ctx.moveTo(-4, 0);
+      ctx.lineTo(2, -wingHeight);
+      ctx.lineTo(12, -wingHeight * 0.4);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
+// 2. 漫天旋转飘舞的手绘金叶 (Autumn Cel Leaves)
+class GhibliLeaf {
+  constructor(w, h, randomSpawn = false) {
+    this.w = w;
+    this.h = h;
+    this.reset(randomSpawn);
+  }
+  reset(randomSpawn = false) {
+    this.x = Math.random() * this.w;
+    this.y = randomSpawn ? Math.random() * this.h : -40;
+    this.size = 14 + Math.random() * 18;
+    this.vx = (Math.random() - 0.5) * 2.2;
+    this.vy = 1.4 + Math.random() * 2.4;
+    this.rot = Math.random() * Math.PI * 2;
+    this.vrot = (Math.random() - 0.5) * 0.07;
+    this.flip = Math.random() * Math.PI;
+    this.vflip = 0.03 + Math.random() * 0.05;
+    // 吉卜力大师调色板：秋山黄、落叶橘、青苔翠绿
+    const palette = ['#c9983e', '#e0b44a', '#a6b852', '#849a40', '#d88636'];
+    this.color = palette[Math.floor(Math.random() * palette.length)];
+  }
+  update(wind) {
+    this.x += this.vx + wind;
+    this.y += this.vy;
+    this.rot += this.vrot;
+    this.flip += this.vflip;
+    if (this.y > this.h + 50 || this.x < -100 || this.x > this.w + 100) {
+      this.reset();
+    }
+  }
+  draw(ctx) {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.rot);
+    ctx.scale(Math.sin(this.flip), 1);
+    ctx.fillStyle = this.color;
+    ctx.beginPath();
+    ctx.moveTo(0, -this.size);
+    ctx.bezierCurveTo(this.size * 0.8, -this.size * 0.2, this.size * 0.8, this.size * 0.6, 0, this.size);
+    ctx.bezierCurveTo(-this.size * 0.8, this.size * 0.6, -this.size * 0.8, -this.size * 0.2, 0, -this.size);
+    ctx.fill();
+
+    // 手墨叶脉细线
+    ctx.strokeStyle = 'rgba(25, 35, 20, 0.35)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(0, -this.size * 0.85);
+    ctx.lineTo(0, this.size * 0.85);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+}
+
+// 3. 崩落的碎泥、苔藓球与断裂藤蔓
+class DebrisClod {
+  constructor(x, y) {
+    this.x = x + (Math.random() - 0.5) * 220;
+    this.y = y + (Math.random() - 0.5) * 90;
+    this.size = 5 + Math.random() * 18;
+    this.vx = (Math.random() - 0.5) * 5.5;
+    this.vy = -2 - Math.random() * 6;
+    this.gravity = 0.42;
+    this.life = 1.0;
+    this.color = Math.random() > 0.45 ? '#4b3925' : '#314424'; // 深泥土或苔藓碎球
+  }
+  update() {
+    this.vy += this.gravity;
+    this.x += this.vx;
+    this.y += this.vy;
+    this.life -= 0.014;
+  }
+  draw(ctx) {
+    if (this.life <= 0) return;
+    ctx.save();
+    ctx.globalAlpha = this.life;
+    ctx.fillStyle = this.color;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+// 4. 赛璐珞日系爆焰气浪环 (Anime Shockwave Ring)
+class AnimePuff {
+  constructor(x, y, maxR, color, speed = 5) {
+    this.x = x;
+    this.y = y;
+    this.r = 15;
+    this.maxR = maxR;
+    this.color = color;
+    this.speed = speed;
+    this.life = 1.0;
+  }
+  update() {
+    this.r += this.speed;
+    this.life = Math.max(0, 1 - (this.r / this.maxR));
+  }
+  draw(ctx) {
+    if (this.life <= 0) return;
+    ctx.save();
+    ctx.globalAlpha = this.life * 0.75;
+    ctx.strokeStyle = this.color;
+    ctx.lineWidth = 18 * this.life;
+    ctx.beginPath();
+    ctx.ellipse(this.x, this.y, this.r * 1.5, this.r * 0.65, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+const robin = new RobinBird();
+const leaves = Array.from({ length: 85 }, () => new GhibliLeaf(WIDTH, HEIGHT, true));
+const debrisList = [];
+const puffs = [];
+
+/**
+ * ------------------------------------------------------------------
+ * 3. 核心美术层绘制 (男鹿和雄水粉背景 + 赛璐珞手绘巨像)
+ * ------------------------------------------------------------------
+ */
+
+// 1. 男鹿和雄风格水粉破晓天空与远山
+function drawPainterlySky(ctx, t) {
+  // 破晓天光渐变 (由晨雾深幽转为灿烂朝霞)
+  const dawnGrad = ctx.createLinearGradient(0, 0, 0, HEIGHT);
+  if (t < 25) {
+    dawnGrad.addColorStop(0, '#0c1622');
+    dawnGrad.addColorStop(0.35, '#182b34');
+    dawnGrad.addColorStop(0.65, '#425547');
+    dawnGrad.addColorStop(1, '#8c8d62');
+  } else {
+    const goldP = Math.min(1.0, (t - 25) / 25);
+    dawnGrad.addColorStop(0, '#162330');
+    dawnGrad.addColorStop(0.35, '#2f4440');
+    dawnGrad.addColorStop(0.65, `rgb(${Math.floor(130 + goldP * 105)}, ${Math.floor(125 + goldP * 65)}, ${Math.floor(75 + goldP * 25)})`);
+    dawnGrad.addColorStop(1, `rgb(${Math.floor(215 + goldP * 40)}, ${Math.floor(180 + goldP * 55)}, ${Math.floor(115 + goldP * 45)})`);
+  }
+  ctx.fillStyle = dawnGrad;
+  ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+  // 远景朦胧水粉山峦剪影 (男鹿和雄多层水粉笔触)
+  ctx.fillStyle = 'rgba(24, 40, 42, 0.78)';
+  ctx.beginPath();
+  ctx.moveTo(0, 710);
+  ctx.bezierCurveTo(380, 660, 720, 740, 1060, 680);
+  ctx.bezierCurveTo(1400, 620, 1680, 720, 1920, 660);
+  ctx.lineTo(1920, 1080);
+  ctx.lineTo(0, 1080);
+  ctx.closePath();
+  ctx.fill();
+
+  // 晨雾薄层弥漫
+  const mistOffset = (t * 15) % 600;
+  ctx.fillStyle = 'rgba(215, 230, 220, 0.16)';
+  ctx.beginPath();
+  ctx.ellipse(960 + mistOffset * 0.4, 760, 1300, 150, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// 2. 树冠与神圣丁达尔体积光束 (God Rays)
+function drawCanopyAndGodRays(ctx, t) {
+  ctx.save();
+  ctx.globalCompositeOperation = 'screen';
+  const rayIntensity = 0.32 + Math.sin(t * 0.7) * 0.08;
+  const sunGrad = ctx.createRadialGradient(1480, 80, 50, 1020, 720, 1300);
+  sunGrad.addColorStop(0, `rgba(255, 240, 185, ${rayIntensity * 1.6})`);
+  sunGrad.addColorStop(0.45, `rgba(255, 210, 135, ${rayIntensity})`);
+  sunGrad.addColorStop(1, 'rgba(255, 240, 180, 0)');
+
+  ctx.fillStyle = sunGrad;
+  // 3 束巨大的倾斜光柱穿透林冠投射在巨像身上
+  [-0.18, 0.04, 0.24].forEach(angle => {
+    ctx.beginPath();
+    ctx.moveTo(1480, 80);
+    ctx.lineTo(450 + angle * 900, 1080);
+    ctx.lineTo(820 + angle * 900, 1080);
+    ctx.closePath();
+    ctx.fill();
+  });
+  ctx.restore();
+
+  // 顶部参天古木树冠深绿水粉厚涂剪影
+  ctx.fillStyle = '#101d16';
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(WIDTH, 0);
+  ctx.lineTo(WIDTH, 230);
+  ctx.bezierCurveTo(1620, 320, 1380, 190, 1120, 270);
+  ctx.bezierCurveTo(820, 360, 460, 210, 0, 290);
+  ctx.closePath();
+  ctx.fill();
+
+  // 树冠叶缘光斑与青翠层次
+  ctx.fillStyle = '#223627';
+  ctx.beginPath();
+  ctx.arc(1180, 260, 95, 0, Math.PI * 2);
+  ctx.arc(710, 290, 115, 0, Math.PI * 2);
+  ctx.arc(330, 240, 85, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// 3. 中景森林盘根、废墟石柱与苔藓地表
+function drawForestFloor(ctx) {
+  // 地表大坡道
+  ctx.fillStyle = '#162319';
+  ctx.beginPath();
+  ctx.moveTo(0, 810);
+  ctx.bezierCurveTo(460, 790, 960, 835, 1460, 805);
+  ctx.bezierCurveTo(1700, 785, 1840, 825, 1920, 815);
+  ctx.lineTo(1920, 1080);
+  ctx.lineTo(0, 1080);
+  ctx.closePath();
+  ctx.fill();
+
+  // 左侧参天古树巨干
+  ctx.fillStyle = '#131c15';
+  ctx.beginPath();
+  ctx.moveTo(-50, 1080);
+  ctx.lineTo(170, 1080);
+  ctx.bezierCurveTo(210, 720, 150, 420, 90, 0);
+  ctx.lineTo(-50, 0);
+  ctx.closePath();
+  ctx.fill();
+
+  // 树干上的厚重苔藓块
+  ctx.fillStyle = '#3f582c';
+  ctx.beginPath();
+  ctx.ellipse(135, 690, 38, 150, 0.16, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 右侧斜倚长满苔藓的古老神庙石柱
+  ctx.fillStyle = '#1d2a22';
+  ctx.beginPath();
+  ctx.moveTo(1740, 1080);
+  ctx.lineTo(1860, 1080);
+  ctx.lineTo(1700, 470);
+  ctx.lineTo(1600, 480);
+  ctx.closePath();
+  ctx.fill();
+
+  // 石柱顶部的淡黄野雏菊簇
+  ctx.fillStyle = '#dec548';
+  for (let i = 0; i < 7; i++) {
+    ctx.beginPath();
+    ctx.arc(1635 + i * 14, 476 + (i % 2) * 5, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+/**
+ * 4. 巨型机甲手绘赛璐珞主角渲染 (The Ancient Ghibli Colossus)
+ * 具备 0-15s(静卧共生), 15-30s(核心觉醒地颤), 30-45s(重力站立与仰望), 45-60s(引擎暴烈冲天) 完整的形体演进
+ */
+function drawCelRobot(ctx, t) {
+  ctx.save();
+
+  let robotX = 960;
+  let robotY = 710;
+  let standProgress = 0;
+  let headLookUp = 0;
+  let coreGlow = 0;
+  let isLaunching = false;
+  let shakeOffset = { x: 0, y: 0 };
+
+  // 阶段 1: 0 - 15s (静止呼吸微动)
+  if (t < 15.0) {
+    coreGlow = 0.05 + Math.sin(t * 1.2) * 0.04;
+    standProgress = 0;
+  }
+  // 阶段 2: 15 - 30s (核心觉醒、地壳微颤)
+  else if (t >= 15.0 && t < 30.0) {
+    const p = (t - 15.0) / 15.0;
+    coreGlow = 0.12 + p * 0.78 + Math.sin(t * 14) * 0.14;
+    standProgress = 0;
+    shakeOffset.x = (Math.random() - 0.5) * 2.2 * p;
+    shakeOffset.y = (Math.random() - 0.5) * 2.2 * p;
+  }
+  // 阶段 3: 30 - 45s (迟缓站起、抬头仰望天光)
+  else if (t >= 30.0 && t < 45.0) {
+    const p = (t - 30.0) / 15.0;
+    standProgress = Math.pow(p, 1.35);
+    robotY = 710 - standProgress * 150; // 站起升高 150px
+    headLookUp = Math.min(1.0, p * 1.3) * -0.42; // 抬头仰角 -24度
+    coreGlow = 0.9 + Math.sin(t * 7) * 0.1;
+    shakeOffset.x = (Math.random() - 0.5) * (1 - p) * 3.5;
+    shakeOffset.y = (Math.random() - 0.5) * (1 - p) * 3.5;
+  }
+  // 阶段 4: 45 - 60s (引擎暴烈点火、冲向金色苍穹)
+  else {
+    const p = (t - 45.0) / 15.0;
+    isLaunching = true;
+    standProgress = 1.0;
+    headLookUp = -0.55;
+    coreGlow = 1.0;
+
+    const launchDist = Math.pow(p, 2.4) * 2400;
+    robotY = 560 - launchDist;
+    robotX = 960 + Math.sin(p * Math.PI) * 180;
+
+    shakeOffset.x = (Math.random() - 0.5) * 8.0 * (1 - p * 0.5);
+    shakeOffset.y = (Math.random() - 0.5) * 8.0 * (1 - p * 0.5);
+  }
+
+  ctx.translate(robotX + shakeOffset.x, robotY + shakeOffset.y);
+
+  // 引擎点火喷流 (当进入发射阶段时)
+  if (isLaunching && robotY > -350) {
+    drawRocketExhaust(ctx, t);
+  }
+
+  // --- 手墨线条 + 赛璐珞硬边阴影机甲主体 ---
+  ctx.strokeStyle = '#121814'; // 纯正手墨描边
+  ctx.lineWidth = 4.5;
+  ctx.lineJoin = 'round';
+
+  // 1. 腿部与基座装甲 (跪坐 -> 站立拉伸)
+  const legLen = standProgress * 80;
+  // 左腿
+  ctx.fillStyle = '#2d3832';
+  ctx.beginPath();
+  ctx.roundRect(-165, 45 + legLen * 0.3, 90, 175 + legLen, [14, 14, 25, 25]);
+  ctx.fill();
+  ctx.stroke();
+
+  // 右腿
+  ctx.beginPath();
+  ctx.roundRect(75, 45 + legLen * 0.3, 90, 175 + legLen, [14, 14, 25, 25]);
+  ctx.fill();
+  ctx.stroke();
+
+  // 腿部盘绕的古藤与青苔
+  if (standProgress < 0.75) {
+    ctx.fillStyle = '#445e2e';
+    ctx.beginPath();
+    ctx.ellipse(-125, 120, 32, 50, 0.35, 0, Math.PI * 2);
+    ctx.ellipse(115, 140, 34, 45, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // 2. 沉重古铜胸甲 (带有拉普达古代守卫的古拙气魄)
+  ctx.fillStyle = '#35433a'; // 古青铜受光面
+  ctx.beginPath();
+  ctx.moveTo(-155, -115);
+  ctx.lineTo(155, -115);
+  ctx.lineTo(125, 85);
+  ctx.bezierCurveTo(65, 125, -65, 125, -125, 85);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // 经典硬边赛璐珞投影 (右侧与底侧阴影)
+  ctx.fillStyle = '#202a24';
+  ctx.beginPath();
+  ctx.moveTo(35, -115);
+  ctx.lineTo(155, -115);
+  ctx.lineTo(125, 85);
+  ctx.bezierCurveTo(65, 125, 25, 115, 5, 85);
+  ctx.closePath();
+  ctx.fill();
+
+  // 胸甲风化红锈斑 (Rust Patches)
+  ctx.fillStyle = '#6e3825';
+  ctx.beginPath();
+  ctx.arc(-90, -65, 16, 0, Math.PI * 2);
+  ctx.arc(85, -80, 14, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 蔓延在胸甲上的浓厚绿苔与小雏菊
+  ctx.fillStyle = '#4f6932';
+  ctx.beginPath();
+  ctx.ellipse(-75, -25, 48, 32, 0.2, 0, Math.PI * 2);
+  ctx.ellipse(65, 15, 38, 28, -0.12, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 苔藓上的明黄小野花
+  ctx.fillStyle = '#e5c942';
+  [-85, -65, 60, 75].forEach((fx, i) => {
+    ctx.beginPath();
+    ctx.arc(fx, -20 + (i % 2) * 25, 3.2, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // 3. 胸口核心琥珀晶石 (Amber Power Core)
+  if (coreGlow > 0.03) {
+    ctx.save();
+    const coreGrad = ctx.createRadialGradient(0, -12, 6, 0, -12, 52);
+    coreGrad.addColorStop(0, `rgba(255, 248, 220, ${coreGlow})`);
+    coreGrad.addColorStop(0.35, `rgba(255, 190, 80, ${coreGlow * 0.92})`);
+    coreGrad.addColorStop(0.85, `rgba(220, 95, 30, ${coreGlow * 0.45})`);
+    coreGrad.addColorStop(1, 'rgba(220, 95, 30, 0)');
+    ctx.fillStyle = coreGrad;
+    ctx.beginPath();
+    ctx.arc(0, -12, 60, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 晶石防护青铜十字格栅
+    ctx.strokeStyle = '#141a15';
+    ctx.lineWidth = 4.5;
+    ctx.beginPath();
+    ctx.moveTo(0, -35);
+    ctx.lineTo(0, 12);
+    ctx.moveTo(-24, -12);
+    ctx.lineTo(24, -12);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // 4. 双臂巨柱装甲 (厚重的圆柱肢体)
+  // 左臂
+  ctx.fillStyle = '#2b3630';
+  ctx.beginPath();
+  ctx.roundRect(-225, -100, 65, 195, [28, 28, 16, 16]);
+  ctx.fill();
+  ctx.stroke();
+  // 右臂 (小鸟停落处)
+  ctx.beginPath();
+  ctx.roundRect(160, -100, 65, 195, [28, 28, 16, 16]);
+  ctx.fill();
+  ctx.stroke();
+
+  // 5. 机体颈部与头颅 (具备抬头仰视的生动骨骼转角)
+  ctx.save();
+  ctx.translate(0, -130);
+  ctx.rotate(headLookUp);
+
+  // 颈部机械液压
+  ctx.fillStyle = '#18201a';
+  ctx.fillRect(-24, 0, 48, 28);
+
+  // 庄严宁静的古代神像头颅
+  ctx.fillStyle = '#35433a';
+  ctx.beginPath();
+  ctx.ellipse(0, -38, 70, 52, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // 头部覆顶青苔 (Moss Cap)
+  ctx.fillStyle = '#46602e';
+  ctx.beginPath();
+  ctx.ellipse(0, -68, 55, 20, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 头顶长出的一根摇曳绿芽小苗 (吉卜力特有的生命象征)
+  ctx.strokeStyle = '#628c3d';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(0, -85);
+  ctx.quadraticCurveTo(8, -102, 14, -108);
+  ctx.stroke();
+  ctx.fillStyle = '#78a649';
+  ctx.beginPath();
+  ctx.ellipse(14, -108, 6, 3, 0.6, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 双眼镜面 (由暗沉点亮为金色晨曦微光)
+  const eyeAlpha = Math.min(1.0, coreGlow * 1.25);
+  const eyeFill = coreGlow > 0.12 ? `rgba(255, 230, 130, ${eyeAlpha})` : '#18221a';
+  ctx.fillStyle = eyeFill;
+  ctx.beginPath();
+  ctx.arc(-26, -35, 10, 0, Math.PI * 2);
+  ctx.arc(26, -35, 10, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#101712';
+  ctx.lineWidth = 3.2;
+  ctx.stroke();
+
+  // 眼眸高光反射点
+  if (coreGlow > 0.15) {
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(-24, -37, 3.2, 0, Math.PI * 2);
+    ctx.arc(28, -37, 3.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.restore(); // 结束头部旋转
+
+  ctx.restore(); // 结束机甲坐标系
+
+  // 绘制小鸟 (栖息在肩头或受惊飞离)
+  robin.draw(ctx, (standProgress * -150));
+}
+
+// 引擎点火喷流 (日系手绘赛璐珞爆焰风格)
+function drawRocketExhaust(ctx, t) {
+  ctx.save();
+  const flameH = 300 + Math.random() * 90;
+  const flameW = 120 + Math.random() * 25;
+
+  [-75, 75].forEach(jetX => {
+    const flameGrad = ctx.createLinearGradient(jetX, 95, jetX, 95 + flameH);
+    flameGrad.addColorStop(0, 'rgba(255, 255, 255, 0.98)');
+    flameGrad.addColorStop(0.2, 'rgba(255, 225, 110, 0.88)');
+    flameGrad.addColorStop(0.65, 'rgba(255, 115, 35, 0.6)');
+    flameGrad.addColorStop(1, 'rgba(255, 60, 15, 0)');
+
+    ctx.fillStyle = flameGrad;
+    ctx.beginPath();
+    ctx.moveTo(jetX - flameW * 0.42, 95);
+    ctx.lineTo(jetX + flameW * 0.42, 95);
+    ctx.lineTo(jetX, 95 + flameH);
+    ctx.closePath();
+    ctx.fill();
+  });
+  ctx.restore();
+}
+
+/**
+ * ------------------------------------------------------------------
+ * 4. 时间轴调度与渲染总循环
+ * ------------------------------------------------------------------
+ */
+function handleTimeline(prevT, currT) {
+  // 02s - 09s 标题
+  if (currT >= 2.0 && currT < 9.0) titleOverlay.style.opacity = '1';
+  else titleOverlay.style.opacity = '0';
+
+  // 04s 第一次清晨鸟鸣
+  if (prevT < 4.0 && currT >= 4.0) playBirdChirp(2500);
+  // 09s 第二次清脆和鸣
+  if (prevT < 9.0 && currT >= 9.0) playBirdChirp(2950);
+
+  // 16s 核心觉醒，地壳震颤
+  if (prevT < 16.0 && currT >= 16.0) playSubRumble();
+
+  // 22s 小鸟受惊拍翅飞向树冠
+  if (prevT < 22.0 && currT >= 22.0) {
+    robin.takeFlight();
+    playBirdChirp(3300);
+  }
+
+  // 30s 站立：金属关节呻吟、碎泥与落叶倾泻
+  if (prevT < 30.0 && currT >= 30.0) {
+    playMetalStress();
+    for (let i = 0; i < 40; i++) {
+      debrisList.push(new DebrisClod(960, 600));
+    }
+  }
+
+  // 36s 高压白汽排泄
+  if (prevT < 36.0 && currT >= 36.0) {
+    puffs.push(new AnimePuff(960, 690, 260, 'rgba(235, 248, 240, 0.75)', 4.0));
+  }
+
+  // 45s 引擎点火冲天，狂风大作
+  if (prevT < 45.0 && currT >= 45.0) {
+    playIgnitionAndTheme();
+    puffs.push(new AnimePuff(960, 760, 700, 'rgba(255, 225, 140, 0.85)', 9.0));
+    puffs.push(new AnimePuff(960, 760, 1000, 'rgba(255, 160, 60, 0.65)', 13.0));
+    for (let i = 0; i < 45; i++) {
+      leaves.push(new GhibliLeaf(WIDTH, HEIGHT, true));
+    }
+  }
+
+  // 51s 尾声抒情字幕
+  if (currT >= 51.0) epilogueOverlay.style.opacity = '1';
+  else epilogueOverlay.style.opacity = '0';
+}
+
+function renderFrame(timestamp) {
+  if (!lastTimestamp) lastTimestamp = timestamp;
+  const dt = (timestamp - lastTimestamp) / 1000;
+  lastTimestamp = timestamp;
+
+  if (isPlaying) {
+    const prevTime = currentTime;
+    currentTime += dt;
+    if (currentTime >= DURATION) {
+      currentTime = DURATION;
+      isPlaying = false;
+      updatePlayIcon();
+    }
+    handleTimeline(prevTime, currentTime);
+    updateProgressUI();
+  }
+
+  // 1. 水粉天空与远山
+  drawPainterlySky(ctx, currentTime);
+
+  // 2. 树冠与神圣丁达尔体积光束
+  drawCanopyAndGodRays(ctx, currentTime);
+
+  // 3. 中景森林盘根地表与遗迹
+  drawForestFloor(ctx);
+
+  // 4. 巨型机甲主角手绘赛璐珞主体
+  drawCelRobot(ctx, currentTime);
+
+  // 5. 动态实体系统：碎土崩落
+  debrisList.forEach(d => {
+    d.update();
+    d.draw(ctx);
+  });
+  for (let i = debrisList.length - 1; i >= 0; i--) {
+    if (debrisList[i].life <= 0) debrisList.splice(i, 1);
+  }
+
+  // 气浪激波环
+  puffs.forEach(p => {
+    p.update();
+    p.draw(ctx);
+  });
+  for (let i = puffs.length - 1; i >= 0; i--) {
+    if (puffs[i].life <= 0) puffs.splice(i, 1);
+  }
+
+  // 升空时的金色与白色薄雾航迹
+  if (currentTime > 45.5) {
+    const p = (currentTime - 45.0) / 15.0;
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    ctx.strokeStyle = 'rgba(255, 240, 215, 0.5)';
+    ctx.lineWidth = 55;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(960, 710);
+    ctx.quadraticCurveTo(960 + Math.sin(p * 2) * 140, 470, 960 + Math.sin(p * Math.PI) * 180, 560 - Math.pow(p, 2.4) * 2400 + 120);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // 6. 漫天金叶在狂风与晨曦中飞旋
+  let windSpeed = 0;
+  if (currentTime >= 30.0 && currentTime < 45.0) windSpeed = 1.4;
+  if (currentTime >= 45.0) windSpeed = 8.5; // 升空狂飙风力
+
+  leaves.forEach(leaf => {
+    leaf.update(windSpeed);
+    leaf.draw(ctx);
+  });
+
+  // 更新小鸟
+  robin.update(currentTime);
+
+  requestAnimationFrame(renderFrame);
+}
+
+function updateProgressUI() {
+  const percent = (currentTime / DURATION) * 100;
+  timelineFill.style.width = `${percent}%`;
+
+  const m = Math.floor(currentTime / 60);
+  const s = Math.floor(currentTime % 60);
+  const pad = n => n.toString().padStart(2, '0');
+  timeLabel.textContent = `${pad(m)}:${pad(s)} / 01:00`;
+}
+
+function updatePlayIcon() {
+  if (isPlaying) {
+    playIcon.innerHTML = `<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>`;
+  } else {
+    playIcon.innerHTML = `<polygon points="5 3 19 12 5 21 5 3"></polygon>`;
+  }
+}
+
+function togglePlay() {
+  initAudioSystem();
+  if (actx && actx.state === 'suspended') actx.resume();
+
+  if (currentTime >= DURATION) {
+    currentTime = 0;
+    robin.reset();
+  }
+  isPlaying = !isPlaying;
+  updatePlayIcon();
+}
+
+function seekTime(ratio) {
+  currentTime = Math.max(0, Math.min(DURATION, ratio * DURATION));
+  if (currentTime < 22.0) robin.reset();
+  updateProgressUI();
+}
+
+startCurtain.addEventListener('click', () => {
+  startCurtain.classList.add('hidden');
+  togglePlay();
+});
+
+playBtn.addEventListener('click', togglePlay);
+
+timelineTrack.addEventListener('click', e => {
+  const rect = timelineTrack.getBoundingClientRect();
+  seekTime((e.clientX - rect.left) / rect.width);
+});
+
+audioBtn.addEventListener('click', () => {
+  isMuted = !isMuted;
+  if (masterGain) masterGain.gain.setValueAtTime(isMuted ? 0 : 0.85, actx.currentTime);
+  audioBtn.style.opacity = isMuted ? '0.4' : '1.0';
+});
+
+fsBtn.addEventListener('click', () => {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+  else document.exitFullscreen().catch(() => {});
+});
+
+window.addEventListener('keydown', e => {
+  if (e.code === 'Space') {
+    e.preventDefault();
+    togglePlay();
+  } else if (e.code === 'ArrowRight') {
+    seekTime((currentTime + 5) / DURATION);
+  } else if (e.code === 'ArrowLeft') {
+    seekTime((currentTime - 5) / DURATION);
+  }
+});
+
+requestAnimationFrame(renderFrame);
+</script>
+</body>
+</html>

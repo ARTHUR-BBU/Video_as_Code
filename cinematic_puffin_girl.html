@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cinematic Puffin Girl - Japanese Limited Animation & Camera Engine</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0d0f12;
+    color: #e2e8f0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 16px;
+    overflow-x: hidden;
+  }
+  #cinema-wrap {
+    position: relative;
+    width: 1080px;
+    height: 720px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.08);
+    background: #000;
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* HUD & Director Controls */
+  .hud-overlay {
+    position: absolute;
+    top: 14px;
+    left: 18px;
+    right: 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    pointer-events: none;
+    font-family: "SF Mono", Monaco, Consolas, monospace;
+    font-size: 11px;
+    color: rgba(255,255,255,0.65);
+    letter-spacing: 0.5px;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+  }
+  .hud-badge {
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(8px);
+    padding: 5px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.12);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .rec-dot {
+    width: 7px;
+    height: 7px;
+    background: #ef4444;
+    border-radius: 50%;
+    animation: blinkRec 1s infinite;
+  }
+  @keyframes blinkRec { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+
+  /* Control Panel */
+  .controls-bar {
+    width: 1080px;
+    margin-top: 14px;
+    background: #161920;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 12px 18px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .btn-group {
+    display: flex;
+    gap: 8px;
+  }
+  .c-btn {
+    background: #232733;
+    color: #cbd5e1;
+    border: 1px solid rgba(255,255,255,0.08);
+    padding: 7px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .c-btn:hover { background: #32384a; color: #fff; }
+  .c-btn.active {
+    background: #3b82f6;
+    color: #fff;
+    border-color: #60a5fa;
+  }
+  .slider-box {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .slider-box input[type="range"] {
+    flex: 1;
+    accent-color: #3b82f6;
+    cursor: pointer;
+  }
+  .meta-tag {
+    font-family: monospace;
+    font-size: 12px;
+    color: #38bdf8;
+    min-width: 90px;
+    text-align: right;
+  }
+</style>
+</head>
+<body>
+
+<div id="cinema-wrap">
+  <div class="hud-overlay">
+    <div class="hud-badge"><span class="rec-dot"></span> 4K DCI · 60 FPS CAM · 12 FPS ANIM (二コマ打ち)</div>
+    <div class="hud-badge" id="hudInfo">SHOT: 电影级缓推特写 (SLOW PUSH-IN) · TAKE 01</div>
+  </div>
+  <canvas id="cinemaCanvas" width="1920" height="1280"></canvas>
+</div>
+
+<div class="controls-bar">
+  <div class="btn-group">
+    <button class="c-btn active" id="camBtn1" onclick="setCameraMode(1)">🎬 慢速推镜 (Push-In)</button>
+    <button class="c-btn" id="camBtn2" onclick="setCameraMode(2)">🍃 微风手持 (Handheld)</button>
+    <button class="c-btn" id="camBtn3" onclick="setCameraMode(3)">🔭 眼神特写 (Eye Close-Up)</button>
+    <button class="c-btn" id="camBtn0" onclick="setCameraMode(0)">📐 静态原画 (Fixed Canvas)</button>
+  </div>
+  <div style="width:1px;height:22px;background:#2d3342;"></div>
+  <button class="c-btn" id="playBtn" onclick="togglePlay()" style="background:#10b981;color:#fff;">⏸ 暂停</button>
+  <button class="c-btn" onclick="captureStill()" style="background:#6366f1;color:#fff;">📸 导出高清原画</button>
+  <div class="slider-box">
+    <input type="range" id="timeSlider" min="0" max="600" value="0" oninput="onSeek(this.value)">
+    <span class="meta-tag" id="timeTag">F: 000 / 10s</span>
+  </div>
+</div>
+
+<script>
+// ===========================================================================
+// CINEMATIC PROCEDURAL ILLUSTRATION ENGINE
+// 100% Pure Code | Japanese Limited Animation | 60FPS Multiplane Camera
+// ===========================================================================
+
+const canvas = document.getElementById('cinemaCanvas');
+const ctx = canvas.getContext('2d');
+const W = 1920, H = 1280;
+
+let frame = 0;
+let isPlaying = true;
+let animId = null;
+let cameraMode = 1; // 1: Push-in, 2: Handheld, 3: Close-up, 0: Fixed
+
+// Deterministic PRNG
+let seed = 42891;
+function rnd() {
+  seed = (seed * 16807) % 2147483647;
+  return (seed - 1) / 2147483646;
+}
+function rndRange(min, max) { return min + rnd() * (max - min); }
+
+// ---------------------------------------------------------------------------
+// ORGANIC GOUACHE & CHALK BRUSH SYSTEM
+// ---------------------------------------------------------------------------
+
+// 1. Organic Bezier Polygon with Soft Chalk Stipple & Textured Edges
+function drawSculptedGouache(pts, fillCol, grainCol = null, roughness = 1.6, density = 0.75) {
+  ctx.save();
+  ctx.beginPath();
+  const n = pts.length;
+  ctx.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 0; i < n; i++) {
+    const p0 = pts[(i - 1 + n) % n];
+    const p1 = pts[i];
+    const p2 = pts[(i + 1) % n];
+    const p3 = pts[(i + 2) % n];
+    
+    // Smooth Catmull-Rom to Cubic Bezier
+    const cp1x = p1[0] + (p2[0] - p0[0]) / 6;
+    const cp1y = p1[1] + (p2[1] - p0[1]) / 6;
+    const cp2x = p2[0] - (p3[0] - p1[0]) / 6;
+    const cp2y = p2[1] - (p3[1] - p1[1]) / 6;
+    ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2[0], p2[1]);
+  }
+  ctx.closePath();
+  ctx.fillStyle = fillCol;
+  ctx.fill();
+
+  // Internal chalk grain & dry-brush drag
+  ctx.clip();
+  let minX = 9999, maxX = -9999, minY = 9999, maxY = -9999;
+  for (const [x, y] of pts) {
+    if (x < minX) minX = x;
+    if (x > maxX) maxX = x;
+    if (y < minY) minY = y;
+    if (y > maxY) maxY = y;
+  }
+
+  const c = grainCol || fillCol;
+  ctx.fillStyle = c;
+  const dotCount = (maxX - minX) * (maxY - minY) * (density * 0.0022);
+  for (let i = 0; i < dotCount; i++) {
+    ctx.globalAlpha = rndRange(0.08, 0.30);
+    ctx.beginPath();
+    ctx.arc(rndRange(minX, maxX), rndRange(minY, maxY), rndRange(0.7, 1.8), 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Directional chalk pencil strokes
+  ctx.strokeStyle = c;
+  ctx.lineWidth = rndRange(1.0, 2.0);
+  const dragCount = (maxY - minY) * 0.25;
+  for (let i = 0; i < dragCount; i++) {
+    const sy = rndRange(minY, maxY);
+    const sx = rndRange(minX, maxX - 45);
+    ctx.globalAlpha = rndRange(0.04, 0.15);
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    ctx.lineTo(sx + rndRange(25, 65), sy + rndRange(-2, 2));
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+// 2. Smooth Curved Tapered Hair Strand (Bezier Calligraphy)
+function drawCurvedHairStrand(x1, y1, cpx, cpy, x2, y2, color, startWidth = 4, endWidth = 1) {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineCap = 'round';
+  const steps = 16;
+  let prevX = x1, prevY = y1;
+  for (let i = 1; i <= steps; i++) {
+    const t = i / steps;
+    const inv = 1 - t;
+    const curX = inv * inv * x1 + 2 * inv * t * cpx + t * t * x2;
+    const curY = inv * inv * y1 + 2 * inv * t * cpy + t * t * y2;
+    ctx.lineWidth = startWidth + (endWidth - startWidth) * t;
+    ctx.beginPath();
+    ctx.moveTo(prevX, prevY);
+    ctx.lineTo(curX, curY);
+    ctx.stroke();
+    prevX = curX;
+    prevY = curY;
+  }
+  ctx.restore();
+}
+
+// 3. Dense Pointillism Blush Spray (Rosy Cheeks & Ear Tips)
+function drawDenseBlush(cx, cy, rx, ry, col, count = 2400, maxR = 2.4) {
+  ctx.save();
+  ctx.fillStyle = col;
+  for (let i = 0; i < count; i++) {
+    const ang = rnd() * Math.PI * 2;
+    const r = Math.pow(rnd(), 0.55);
+    const px = cx + Math.cos(ang) * rx * r + (rnd() - 0.5) * 2;
+    const py = cy + Math.sin(ang) * ry * r + (rnd() - 0.5) * 2;
+    const dotR = (1 - r * 0.65) * rndRange(0.7, maxR);
+    ctx.globalAlpha = (1 - r * 0.82) * rndRange(0.18, 0.55);
+    ctx.beginPath();
+    ctx.arc(px, py, dotR, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+// ---------------------------------------------------------------------------
+// JAPANESE LIMITED ANIMATION TIMING ENGINE (コマ打ち / STEPPED KEYFRAMING)
+// ---------------------------------------------------------------------------
+
+function getLimitedAnimationState(f) {
+  // Step character animation on 2s (12 fps inside 60 fps container)
+  const animFrame = Math.floor(f / 2) * 2;
+
+  // 1. Natural Breathing: slow sine wave with stepped hold
+  const rawBreath = Math.sin(animFrame * 0.045);
+  const breathY = rawBreath * 4.0;
+
+  // 2. Snappy Japanese Anime Blink Timing (二コマ打ち):
+  // Held wide open -> 1 frame snap shut -> 1 frame closed -> 1 frame half open -> Open!
+  const blinkCycle = animFrame % 140;
+  let eyeOpen = 1.0;
+  if (blinkCycle === 134) eyeOpen = 0.5;
+  else if (blinkCycle === 136) eyeOpen = 0.05;
+  else if (blinkCycle === 138) eyeOpen = 0.4;
+
+  // 3. Saccadic Gaze Shift (Eyes dart from right to left, then hold)
+  const gazeCycle = (animFrame % 240);
+  let gazeX = 8, gazeY = -4; // default looking up-right
+  if (gazeCycle > 120 && gazeCycle < 180) {
+    gazeX = -5; // dart left
+    gazeY = -2;
+  } else if (gazeCycle >= 180 && gazeCycle < 210) {
+    gazeX = 0; // look center
+    gazeY = -6;
+  }
+
+  // 4. Puffin Bird Saccadic Head Snap (Birds snap their heads abruptly)
+  const puffinCycle = Math.floor(animFrame / 40);
+  const puffinHeadSnap = (puffinCycle % 3 === 0) ? 0 : ((puffinCycle % 3 === 1) ? 5 : -3);
+  const puffinBob = (animFrame % 80 > 74) ? -4 : 0; // sudden little hop
+
+  // 5. Hair & Scarf Breeze Flutter (Stepped harmonic oscillation)
+  const windWave = Math.sin(animFrame * 0.12) * 6;
+
+  return { breathY, eyeOpen, gazeX, gazeY, puffinHeadSnap, puffinBob, windWave };
+}
+
+// ---------------------------------------------------------------------------
+// CINEMATIC MULTIPLANE CAMERA (运镜系统)
+// ---------------------------------------------------------------------------
+
+function getCameraTransform(f) {
+  let tx = W / 2, ty = H / 2 + 50, zoom = 1.0, rot = 0;
+
+  if (cameraMode === 1) {
+    // Mode 1: Push-In (电影级缓推特写)
+    // 0s-5s: Smooth Dolly in towards the face & puffin
+    const progress = Math.min(1, f / 300);
+    const ease = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress;
+    zoom = 0.95 + ease * 0.40; // 0.95x -> 1.35x
+    ty = (H / 2 + 50) - ease * 130; // Track up towards face & hat
+    tx += Math.sin(f * 0.02) * 5;
+    ty += Math.cos(f * 0.015) * 4;
+    rot = Math.sin(f * 0.018) * 0.005;
+  } else if (cameraMode === 2) {
+    // Mode 2: Handheld Breeze (手持微晃呼吸感)
+    zoom = 1.06 + Math.sin(f * 0.012) * 0.02;
+    tx += Math.sin(f * 0.025) * 12 + Math.cos(f * 0.01) * 6;
+    ty += Math.cos(f * 0.02) * 8 - 30;
+    rot = Math.sin(f * 0.02) * 0.012;
+  } else if (cameraMode === 3) {
+    // Mode 3: Eye Close-Up (超特写)
+    zoom = 1.62;
+    tx = W / 2 - 10;
+    ty = H / 2 - 100;
+    rot = Math.sin(f * 0.015) * 0.004;
+  } else {
+    // Mode 0: Fixed Original Frame
+    zoom = 1.0;
+    tx = W / 2;
+    ty = H / 2 + 40;
+    rot = 0;
+  }
+
+  return { tx, ty, zoom, rot };
+}
+
+// ---------------------------------------------------------------------------
+// MASTER SCENE RENDERER (EXQUISITE HIGH-CRAFT)
+// ---------------------------------------------------------------------------
+
+function renderScene(f) {
+  seed = 42891; // Reset PRNG for deterministic rendering
+  const anim = getLimitedAnimationState(f);
+  const cam = getCameraTransform(f);
+
+  // 1. WARM PAPER BACKGROUND
+  ctx.fillStyle = '#faf8f4';
+  ctx.fillRect(0, 0, W, H);
+
+  // Subtle paper vignette
+  ctx.save();
+  const grad = ctx.createRadialGradient(W/2, H/2, 200, W/2, H/2, 1100);
+  grad.addColorStop(0, 'rgba(255,255,255,0.4)');
+  grad.addColorStop(1, 'rgba(30, 24, 16, 0.06)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+
+  // 2. APPLY CAMERA MULTIPLANE MATRIX
+  ctx.save();
+  ctx.translate(W / 2, H / 2);
+  ctx.rotate(cam.rot);
+  ctx.scale(cam.zoom, cam.zoom);
+  ctx.translate(-cam.tx, -cam.ty);
+
+  const cx = W / 2, cy = H / 2 + anim.breathY;
+
+  // -------------------------------------------------------------------------
+  // LAYER 1: BACK DARK HAIR MASS & CHOPPY BOB
+  // -------------------------------------------------------------------------
+  const hairBack = [
+    [cx - 360, cy - 200], [cx + 360, cy - 200], [cx + 420, cy - 40], [cx + 430, cy + 160],
+    [cx + 380, cy + 230], [cx + 300, cy + 150], [cx + 240, cy + 240], [cx + 170, cy + 160],
+    [cx + 90, cy + 235], [cx + 10, cy + 155], [cx - 70, cy + 240], [cx - 150, cy + 160],
+    [cx - 230, cy + 235], [cx - 310, cy + 155], [cx - 380, cy + 220], [cx - 430, cy + 140],
+    [cx - 420, cy - 40]
+  ];
+  drawSculptedGouache(hairBack, '#111722', '#070a0f', 3.0, 0.85);
+
+  // Elegant Curving Hair Wisps (Calligraphic Tapered Beziers)
+  const w = anim.windWave;
+  // Left side flyaways
+  drawCurvedHairStrand(cx - 360, cy - 100, cx - 460, cy - 140 + w, cx - 490, cy - 90 + w, '#111722', 4, 1);
+  drawCurvedHairStrand(cx - 380, cy - 40, cx - 480, cy - 80 + w, cx - 510, cy - 30 + w, '#111722', 4, 1);
+  drawCurvedHairStrand(cx - 390, cy + 40, cx - 490, cy + 30 + w, cx - 500, cy + 90 + w, '#111722', 3.5, 1);
+  drawCurvedHairStrand(cx - 360, cy + 120, cx - 450, cy + 140 + w, cx - 460, cy + 200 + w, '#111722', 3, 1);
+  // Right side flyaways
+  drawCurvedHairStrand(cx + 360, cy - 100, cx + 460, cy - 140 + w, cx + 490, cy - 90 + w, '#111722', 4, 1);
+  drawCurvedHairStrand(cx + 380, cy - 40, cx + 480, cy - 80 + w, cx + 510, cy - 30 + w, '#111722', 4, 1);
+  drawCurvedHairStrand(cx + 390, cy + 40, cx + 490, cy + 30 + w, cx + 500, cy + 90 + w, '#111722', 3.5, 1);
+  drawCurvedHairStrand(cx + 360, cy + 120, cx + 450, cy + 140 + w, cx + 460, cy + 200 + w, '#111722', 3, 1);
+
+  // -------------------------------------------------------------------------
+  // LAYER 2: TORSO & YELLOW GLEN-PLAID COAT
+  // -------------------------------------------------------------------------
+  const coatPoints = [
+    [cx - 580, cy + 800], [cx - 540, cy + 340], [cx - 420, cy + 290], [cx - 300, cy + 320],
+    [cx - 200, cy + 250], [cx - 80, cy + 240], [cx, cy + 180], [cx + 80, cy + 240],
+    [cx + 200, cy + 250], [cx + 300, cy + 320], [cx + 420, cy + 290], [cx + 540, cy + 340],
+    [cx + 580, cy + 800]
+  ];
+  drawSculptedGouache(coatPoints, '#e9b122', '#d59d14', 3.2, 0.75);
+
+  // Purple Horizontal Chest Stripe (Y: cy + 620 to cy + 740)
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(cx - 580, cy + 610, 1160, 130);
+  ctx.clip();
+  drawSculptedGouache([
+    [cx - 580, cy + 610], [cx + 580, cy + 610], [cx + 580, cy + 740], [cx - 580, cy + 740]
+  ], '#7430b5', '#571e8f', 2.8, 0.85);
+  ctx.restore();
+
+  // Woven Check Grid Lines across Coat
+  ctx.save();
+  ctx.strokeStyle = 'rgba(45, 35, 15, 0.45)';
+  ctx.lineWidth = 2.0;
+  for (let y = cy + 300; y < cy + 800; y += 48) {
+    ctx.beginPath(); ctx.moveTo(cx - 540, y); ctx.lineTo(cx + 540, y); ctx.stroke();
+  }
+  for (let x = cx - 500; x < cx + 500; x += 65) {
+    ctx.beginPath(); ctx.moveTo(x, cy + 280); ctx.lineTo(x, cy + 800); ctx.stroke();
+  }
+  ctx.restore();
+
+  // Right Coat Pocket Flap with Stitched Border & Brass Rivet
+  const pocketPts = [
+    [cx + 190, cy + 410], [cx + 340, cy + 440], [cx + 325, cy + 505], [cx + 175, cy + 475]
+  ];
+  drawSculptedGouache(pocketPts, '#dfa318', '#c48a0d', 2.0, 0.6);
+  ctx.strokeStyle = '#222';
+  ctx.lineWidth = 2.2;
+  ctx.strokeRect(cx + 190, cy + 410, 140, 70);
+  // Pocket Rivet
+  ctx.fillStyle = '#1c1b18';
+  ctx.beginPath(); ctx.arc(cx + 265, cy + 470, 6, 0, Math.PI * 2); ctx.fill();
+
+  // -------------------------------------------------------------------------
+  // LAYER 3: INNER SHIRT & FLEECE COLLARS
+  // -------------------------------------------------------------------------
+  // White sailor shirt
+  drawSculptedGouache([
+    [cx - 100, cy + 180], [cx + 100, cy + 180], [cx + 90, cy + 800], [cx - 90, cy + 800]
+  ], '#fefdfa', '#dedad0', 2.0, 0.4);
+  // Horizontal Sailor Blue Stripes
+  for (let sy = cy + 220; sy < cy + 800; sy += 38) {
+    ctx.fillStyle = '#2b6ab8';
+    ctx.fillRect(cx - 95, sy, 190, 18);
+    for (let k = 0; k < 35; k++) {
+      ctx.fillStyle = 'rgba(255,255,255,0.28)';
+      ctx.fillRect(rndRange(cx - 95, cx + 95), sy + rndRange(2, 14), rndRange(2, 6), 1.6);
+    }
+  }
+
+  // High Fleece Collar - Left Flap (Cobalt Blue with Hand-stitched Pink Dashes)
+  const leftCollar = [
+    [cx - 230, cy + 160], [cx - 30, cy + 180], [cx - 65, cy + 390], [cx - 175, cy + 375], [cx - 230, cy + 270]
+  ];
+  drawSculptedGouache(leftCollar, '#2d65be', '#1d4ea0', 2.5, 0.7);
+  // Pink dash stitches
+  ctx.strokeStyle = '#e64e9e';
+  ctx.lineWidth = 4.8;
+  ctx.lineCap = 'round';
+  const stitchRows = [
+    [[cx - 195, cy + 205], [cx - 70, cy + 215]],
+    [[cx - 185, cy + 245], [cx - 60, cy + 255]],
+    [[cx - 170, cy + 285], [cx - 65, cy + 295]],
+    [[cx - 150, cy + 325], [cx - 75, cy + 335]]
+  ];
+  for (const [p1, p2] of stitchRows) {
+    ctx.beginPath(); ctx.moveTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]); ctx.stroke();
+  }
+
+  // High Fleece Collar - Right Flap (Emerald / Jade Green)
+  const rightCollar = [
+    [cx + 40, cy + 180], [cx + 240, cy + 160], [cx + 240, cy + 270], [cx + 185, cy + 375], [cx + 75, cy + 390]
+  ];
+  drawSculptedGouache(rightCollar, '#139b6e', '#0c7d55', 2.5, 0.7);
+
+  // Black cross-body strap
+  drawSculptedGouache([
+    [cx - 270, cy + 200], [cx - 105, cy + 800], [cx - 195, cy + 800], [cx - 330, cy + 210]
+  ], '#202125', '#111214', 2.0, 0.6);
+
+  // -------------------------------------------------------------------------
+  // LAYER 4: BINOCULARS (CYLINDRICAL SHADING, RED CAPS, CYAN LENS, BRASS KNOB)
+  // -------------------------------------------------------------------------
+  const bx = cx, by = cy + 590;
+  const drawBarrel = (x) => {
+    drawSculptedGouache([
+      [x - 42, by - 80], [x + 42, by - 80], [x + 42, by + 80], [x - 42, by + 80]
+    ], '#2864b5', '#174382', 2.0, 0.8);
+    ctx.fillStyle = 'rgba(255,255,255,0.22)';
+    ctx.fillRect(x - 24, by - 75, 14, 150);
+  };
+  drawBarrel(bx - 58);
+  drawBarrel(bx + 58);
+
+  // Red top eyepieces
+  drawSculptedGouache([[bx - 96, by - 105], [bx - 20, by - 105], [bx - 16, by - 80], [bx - 100, by - 80]], '#d63d3d', '#ae2828');
+  drawSculptedGouache([[bx + 20, by - 105], [bx + 96, by - 105], [bx + 100, by - 80], [bx + 16, by - 80]], '#d63d3d', '#ae2828');
+
+  // Bright Cyan bottom lens rims with lens glass shine
+  drawSculptedGouache([[bx - 102, by + 80], [bx - 14, by + 80], [bx - 18, by + 108], [bx - 98, by + 108]], '#1dc6c6', '#129393');
+  drawSculptedGouache([[bx + 14, by + 80], [bx + 102, by + 80], [bx + 98, by + 108], [bx + 18, by + 108]], '#1dc6c6', '#129393');
+  ctx.fillStyle = '#083333';
+  ctx.beginPath(); ctx.ellipse(bx - 58, by + 104, 32, 10, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(bx + 58, by + 104, 32, 10, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.beginPath(); ctx.ellipse(bx - 54, by + 102, 16, 4, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(bx + 62, by + 102, 16, 4, 0, 0, Math.PI * 2); ctx.fill();
+
+  // Central Brass Focus Dial & Bridge
+  ctx.fillStyle = '#222';
+  ctx.fillRect(bx - 25, by - 25, 50, 50);
+  drawSculptedGouache([[bx - 18, by - 18], [bx + 18, by - 18], [bx + 18, by + 18], [bx - 18, by + 18]], '#e8a91c', '#c78d11');
+  // Strap cords
+  ctx.strokeStyle = '#222'; ctx.lineWidth = 5;
+  ctx.beginPath(); ctx.moveTo(bx - 60, by - 105); ctx.lineTo(bx - 95, by - 240); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(bx + 60, by - 105); ctx.lineTo(bx + 95, by - 240); ctx.stroke();
+
+  // -------------------------------------------------------------------------
+  // LAYER 5: SLENDER NECK & SCULPTED CHIN
+  // -------------------------------------------------------------------------
+  drawSculptedGouache([
+    [cx - 48, cy + 20], [cx + 48, cy + 20], [cx + 56, cy + 210], [cx - 56, cy + 210]
+  ], '#fde4d3', '#f8d1ba', 2.0, 0.5);
+
+  // -------------------------------------------------------------------------
+  // LAYER 6: FACE, EARS, BLUSH & FRECKLES
+  // -------------------------------------------------------------------------
+  const facePoints = [
+    [cx - 260, cy - 250], [cx + 260, cy - 250], [cx + 310, cy - 110], [cx + 295, cy + 20],
+    [cx + 200, cy + 90], [cx + 80, cy + 130], [cx - 80, cy + 130], [cx - 200, cy + 90],
+    [cx - 295, cy + 20], [cx - 310, cy - 110]
+  ];
+  drawSculptedGouache(facePoints, '#fde6d7', '#f8d5bf', 2.0, 0.55);
+
+  // Sculpted Ears
+  drawSculptedGouache([[cx - 310, cy - 120], [cx - 260, cy - 130], [cx - 260, cy - 10], [cx - 315, cy - 25], [cx - 340, cy - 75]], '#fcdbc6', '#f3be9e');
+  drawSculptedGouache([[cx + 260, cy - 130], [cx + 310, cy - 120], [cx + 340, cy - 75], [cx + 315, cy - 25], [cx + 260, cy - 10]], '#fcdbc6', '#f3be9e');
+
+  // Chunky Gold Hoop Earrings (With Metallic Highlight Glint)
+  ctx.strokeStyle = '#e8a81d';
+  ctx.lineWidth = 16;
+  ctx.beginPath(); ctx.arc(cx - 280, cy + 5, 26, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx + 280, cy + 5, 26, 0, Math.PI * 2); ctx.stroke();
+  ctx.strokeStyle = '#fff5cf';
+  ctx.lineWidth = 6;
+  ctx.beginPath(); ctx.arc(cx - 280, cy + 5, 26, -0.6 * Math.PI, -0.2 * Math.PI); ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx + 280, cy + 5, 26, -0.6 * Math.PI, -0.2 * Math.PI); ctx.stroke();
+
+  // Dense Pointillism Blush Spray (Soft & Natural)
+  drawDenseBlush(cx - 150, cy - 65, 115, 75, '#e85c6d', 2200);
+  drawDenseBlush(cx + 175, cy - 65, 115, 75, '#e85c6d', 2200);
+  drawDenseBlush(cx + 5, cy - 70, 55, 38, '#e85465', 1000);
+
+  // Micro-Freckles across Bridge of Nose and Cheeks
+  ctx.fillStyle = '#7a3e32';
+  for (let i = 0; i < 45; i++) {
+    const fx = rndRange(cx - 150, cx + 180);
+    const fy = rndRange(cy - 95, cy - 35);
+    ctx.beginPath();
+    ctx.arc(fx, fy, rndRange(1.2, 2.6), 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Cute Strawberry Pink Nose with Highlight
+  drawSculptedGouache([
+    [cx - 12, cy - 105], [cx + 18, cy - 65], [cx + 5, cy - 40], [cx - 24, cy - 46]
+  ], '#d84d58', '#b5333d', 1.8, 0.7);
+  // Nostril dot
+  ctx.fillStyle = '#221a1c';
+  ctx.beginPath(); ctx.arc(cx - 18, cy - 44, 4.2, 0, Math.PI * 2); ctx.fill();
+
+  // Expressive Wry Smile Line with Corner Indentation
+  ctx.strokeStyle = '#a6383f'; ctx.lineWidth = 5.0; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(cx - 38, cy + 32); ctx.lineTo(cx + 42, cy + 24); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx + 42, cy + 24); ctx.lineTo(cx + 48, cy + 18); ctx.stroke();
+
+  // -------------------------------------------------------------------------
+  // LAYER 7: LUMINOUS ANIME / STORYBOOK EYES (STEPPED GAZE & BLINK)
+  // -------------------------------------------------------------------------
+  const eyeBlink = anim.eyeOpen;
+  const gx = anim.gazeX;
+  const gy = anim.gazeY;
+
+  // Left Eye (cx - 150, cy - 100)
+  ctx.save();
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.ellipse(cx - 150, cy - 100, 54, 58 * eyeBlink, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#222'; ctx.lineWidth = 2.4;
+  ctx.beginPath(); ctx.moveTo(cx - 200, cy - 100); ctx.lineTo(cx - 100, cy - 100); ctx.stroke();
+  if (eyeBlink > 0.3) {
+    ctx.fillStyle = '#161d24';
+    ctx.beginPath(); ctx.arc(cx - 130 + gx, cy - 120 + gy, 28, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.arc(cx - 122 + gx, cy - 128 + gy, 6.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.beginPath(); ctx.arc(cx - 138 + gx, cy - 110 + gy, 3.5, 0, Math.PI * 2); ctx.fill();
+  }
+  // Upper Eyelash Wing
+  ctx.strokeStyle = '#121720'; ctx.lineWidth = 5.5; ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(cx - 208, cy - 105);
+  ctx.quadraticCurveTo(cx - 150, cy - 158, cx - 96, cy - 105);
+  ctx.stroke();
+  ctx.restore();
+
+  // Right Eye (cx + 175, cy - 100)
+  ctx.save();
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.ellipse(cx + 175, cy - 100, 54, 58 * eyeBlink, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#222'; ctx.lineWidth = 2.4;
+  ctx.beginPath(); ctx.moveTo(cx + 125, cy - 100); ctx.lineTo(cx + 225, cy - 100); ctx.stroke();
+  if (eyeBlink > 0.3) {
+    ctx.fillStyle = '#161d24';
+    ctx.beginPath(); ctx.arc(cx + 195 + gx, cy - 120 + gy, 28, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.arc(cx + 203 + gx, cy - 128 + gy, 6.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.beginPath(); ctx.arc(cx + 187 + gx, cy - 110 + gy, 3.5, 0, Math.PI * 2); ctx.fill();
+  }
+  // Upper Eyelash Wing
+  ctx.strokeStyle = '#121720'; ctx.lineWidth = 5.5; ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(cx + 118, cy - 105);
+  ctx.quadraticCurveTo(cx + 175, cy - 158, cx + 230, cy - 105);
+  ctx.stroke();
+  ctx.restore();
+
+  // Expressive Thin Eyebrows
+  ctx.strokeStyle = '#1b2229'; ctx.lineWidth = 4.0; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(cx - 200, cy - 175); ctx.lineTo(cx - 110, cy - 170); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx + 130, cy - 170); ctx.lineTo(cx + 220, cy - 180); ctx.stroke();
+
+  // Forehead Bangs Tuft
+  const bangs = [
+    [[cx - 250, cy - 250], [cx - 190, cy - 320], [cx - 150, cy - 245]],
+    [[cx - 120, cy - 250], [cx - 75, cy - 330], [cx - 30, cy - 240]],
+    [[cx + 140, cy - 245], [cx + 185, cy - 325], [cx + 230, cy - 250]]
+  ];
+  for (const b of bangs) drawSculptedGouache(b, '#111722', '#070a0f', 2.0, 0.7);
+
+  // -------------------------------------------------------------------------
+  // LAYER 8: CLOCHE / BUCKET HAT (PURPLE BRIM & SPLIT CROWN)
+  // -------------------------------------------------------------------------
+  const brimPts = [];
+  const brimW = 400, brimH = 75, brimCY = cy - 280;
+  for (let a = 0; a <= Math.PI * 2; a += 0.08) {
+    const rx = brimW + (rnd() - 0.5) * 8;
+    const ry = (a < Math.PI ? brimH * 1.35 : brimH * 0.75) + (rnd() - 0.5) * 6;
+    brimPts.push([cx + Math.cos(a) * rx, brimCY + Math.sin(a) * ry]);
+  }
+  drawSculptedGouache(brimPts, '#6e39a6', '#512285', 2.8, 0.85);
+
+  // Hat Crown (Split: Royal Blue Left / Emerald Green Right)
+  const leftCrown = [
+    [cx - 225, cy - 300], [cx - 3, cy - 300], [cx - 3, cy - 470], [cx - 130, cy - 435], [cx - 225, cy - 355]
+  ];
+  drawSculptedGouache(leftCrown, '#2262bc', '#164894', 2.4, 0.75);
+
+  const rightCrown = [
+    [cx + 3, cy - 300], [cx + 225, cy - 300], [cx + 225, cy - 355], [cx + 130, cy - 435], [cx + 3, cy - 470]
+  ];
+  drawSculptedGouache(rightCrown, '#12986c', '#0a704e', 2.4, 0.75);
+
+  // Brim Shadow Crease
+  ctx.strokeStyle = '#351658'; ctx.lineWidth = 5.0;
+  ctx.beginPath(); ctx.moveTo(cx - 340, cy - 275); ctx.lineTo(cx + 340, cy - 275); ctx.stroke();
+
+  // -------------------------------------------------------------------------
+  // LAYER 9: THE PUFFIN BIRD (STEPPED HEAD BOB & DETAILED BEAK GROOVES)
+  // -------------------------------------------------------------------------
+  const pfx = cx - 90 + anim.puffinHeadSnap;
+  const pfy = cy - 530 + anim.puffinBob;
+
+  // Claws clasping hat crown
+  drawSculptedGouache([[pfx - 15, pfy + 72], [pfx + 10, pfy + 72], [pfx - 5, pfy + 88]], '#f05b26', '#c94110');
+  drawSculptedGouache([[pfx + 45, pfy + 72], [pfx + 70, pfy + 72], [pfx + 60, pfy + 88]], '#f05b26', '#c94110');
+
+  // Black body, tail and wings
+  const birdBack = [
+    [pfx - 165, pfy + 62], [pfx - 90, pfy + 40], [pfx - 30, pfy + 18],
+    [pfx + 30, pfy - 50], [pfx + 105, pfy - 75], [pfx + 130, pfy - 18],
+    [pfx + 95, pfy + 62], [pfx - 30, pfy + 72]
+  ];
+  drawSculptedGouache(birdBack, '#181e26', '#090d13', 2.4, 0.8);
+
+  // White plump belly & facial cheek
+  const birdWhite = [
+    [pfx - 10, pfy + 70], [pfx + 85, pfy + 65], [pfx + 112, pfy + 10],
+    [pfx + 122, pfy - 35], [pfx + 65, pfy - 55], [pfx + 22, pfy - 14],
+    [pfx + 10, pfy + 44]
+  ];
+  drawSculptedGouache(birdWhite, '#ffffff', '#e0dcd2', 1.8, 0.5);
+
+  // Black bird skullcap
+  drawSculptedGouache([[pfx + 20, pfy - 52], [pfx + 105, pfy - 75], [pfx + 128, pfy - 40], [pfx + 65, pfy - 40]], '#181e26');
+
+  // Puffin Beak (Sculpted orange/red wedge with vertical ridges)
+  const beakPts = [
+    [pfx + 122, pfy - 44], [pfx + 210, pfy - 20], [pfx + 198, pfy + 6], [pfx + 122, pfy + 12]
+  ];
+  drawSculptedGouache(beakPts, '#f05537', '#cf3718', 2.0, 0.75);
+  // Beak Grooves
+  ctx.strokeStyle = '#ff8a52'; ctx.lineWidth = 4.5;
+  ctx.beginPath(); ctx.moveTo(pfx + 152, pfy - 32); ctx.lineTo(pfx + 148, pfy + 10); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pfx + 180, pfy - 22); ctx.lineTo(pfx + 175, pfy + 5); ctx.stroke();
+  ctx.strokeStyle = '#181e26'; ctx.lineWidth = 7.0;
+  ctx.beginPath(); ctx.moveTo(pfx + 125, pfy - 42); ctx.lineTo(pfx + 125, pfy + 10); ctx.stroke();
+
+  // Grumpy Alert Bird Eye
+  ctx.fillStyle = '#181e26';
+  ctx.beginPath(); ctx.arc(pfx + 82, pfy - 22, 5.8, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#181e26'; ctx.lineWidth = 4.0;
+  ctx.beginPath(); ctx.moveTo(pfx + 66, pfy - 32); ctx.lineTo(pfx + 98, pfy - 25); ctx.stroke();
+
+  // -------------------------------------------------------------------------
+  // LAYER 10: FOREGROUND CINEMATIC BOKEH LEAVES (Drifting Outside Character Frame)
+  // -------------------------------------------------------------------------
+  for (let i = 0; i < 8; i++) {
+    // Keep leaves around frame periphery
+    const angle = (i / 8) * Math.PI * 2 + f * 0.01;
+    const dist = 750 + (i % 3) * 80;
+    const lx = cx + Math.cos(angle) * dist + Math.sin(f * 0.03 + i) * 30;
+    const ly = cy + Math.sin(angle) * (dist * 0.7) + f * 0.5;
+    const size = 22 + (i % 3) * 10;
+    const lColor = (i % 3 === 0) ? '#e5a522' : ((i % 3 === 1) ? '#d64e28' : '#228258');
+    
+    ctx.save();
+    ctx.translate(lx, ly);
+    ctx.rotate(f * 0.03 + i);
+    ctx.globalAlpha = 0.45;
+    drawSculptedGouache([[-size, 0], [0, -size * 1.5], [size, 0], [0, size * 1.5]], lColor);
+    ctx.restore();
+  }
+
+  // Restore camera transform
+  ctx.restore();
+
+  // -------------------------------------------------------------------------
+  // LAYER 11: CINEMATIC FILM GRAIN NOISE PASS
+  // -------------------------------------------------------------------------
+  const imgData = ctx.getImageData(0, 0, W, H);
+  const d = imgData.data;
+  for (let i = 0; i < d.length; i += 8) {
+    const nVal = (rnd() - 0.5) * 10;
+    d[i] = Math.min(255, Math.max(0, d[i] + nVal));
+    d[i+1] = Math.min(255, Math.max(0, d[i+1] + nVal));
+    d[i+2] = Math.min(255, Math.max(0, d[i+2] + nVal));
+  }
+  ctx.putImageData(imgData, 0, 0);
+}
+
+// ---------------------------------------------------------------------------
+// DIRECTOR CONTROLS & TIMELINE LOOP
+// ---------------------------------------------------------------------------
+
+function loop() {
+  renderScene(frame);
+
+  if (isPlaying) {
+    frame = (frame + 1) % 601;
+    document.getElementById('timeSlider').value = frame;
+    const sec = (frame / 60).toFixed(1);
+    document.getElementById('timeTag').textContent = `F: ${String(frame).padStart(3, '0')} / ${sec}s`;
+  }
+  animId = requestAnimationFrame(loop);
+}
+
+function setCameraMode(m) {
+  cameraMode = m;
+  for (let i = 0; i <= 3; i++) {
+    const btn = document.getElementById(`camBtn${i}`);
+    if (btn) btn.classList.toggle('active', i === m);
+  }
+  const titles = [
+    'SHOT: 静态构图 (FIXED CANVAS)',
+    'SHOT: 电影级缓推特写 (SLOW PUSH-IN特写)',
+    'SHOT: 微风手持晃动 (HANDHELD DRIFT)',
+    'SHOT: 眼神与海鹦特写 (EYE & PUFFIN CLOSE-UP)'
+  ];
+  document.getElementById('hudInfo').textContent = `${titles[m]} · TAKE 01`;
+}
+
+function togglePlay() {
+  isPlaying = !isPlaying;
+  document.getElementById('playBtn').textContent = isPlaying ? '⏸ 暂停' : '▶ 播放';
+}
+
+function onSeek(val) {
+  frame = parseInt(val);
+  const sec = (frame / 60).toFixed(1);
+  document.getElementById('timeTag').textContent = `F: ${String(frame).padStart(3, '0')} / ${sec}s`;
+}
+
+function captureStill() {
+  const link = document.createElement('a');
+  link.download = `cinematic_puffin_girl_frame_${frame}.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+// Start loop
+animId = requestAnimationFrame(loop);
+</script>
+</body>
+</html>

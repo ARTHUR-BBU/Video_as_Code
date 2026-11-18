@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<body>
+<video id="v" src="sync_test_1080p60_15s.mp4" muted playsinline></video>
+<script>
+  const v = document.getElementById('v');
+  const times = [];
+  function onFrame(now, meta) {
+    times.push({ now, mediaTime: meta.mediaTime, presentedFrames: meta.presentedFrames });
+    if (times.length < 180) {
+      v.requestVideoFrameCallback(onFrame);
+    } else {
+      fetch('/api/log_fps', { method: 'POST', body: JSON.stringify(times) });
+    }
+  }
+  v.requestVideoFrameCallback(onFrame);
+  v.play();
+</script>
+</body>
+</html>

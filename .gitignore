@@ -1,0 +1,43 @@
+# ==============================================================================
+# Video-as-Code Studio Workspace .gitignore
+# ==============================================================================
+
+# Python Virtual Environments & Cache
+.venv/
+venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyd
+.pytest_cache/
+
+# Node.js & Remotion Runtime Caches
+node_modules/
+.remotion/
+.cache/
+.taste-skill/
+dist/
+build/
+.next/
+out/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Cloned External Reference Repositories (Independent Git Repos)
+/openmotion/
+/cinetic/
+/earshot/
+/motion2code/
+/taste-skill/
+
+# OS & Editor Metadata
+.DS_Store
+Thumbs.db
+desktop.ini
+*.tmp
+*.log
+.vscode/
+.idea/

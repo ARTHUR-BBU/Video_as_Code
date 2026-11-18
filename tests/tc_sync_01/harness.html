@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>TC-SYNC-01 Benchmark Harness</title>
+  <style>
+    body { background: #0a0a0c; color: #e2e8f0; font-family: monospace; padding: 20px; margin: 0; }
+    h1 { font-size: 18px; color: #38bdf8; margin: 0 0 8px 0; }
+    #status { font-size: 13px; color: #94a3b8; margin-bottom: 12px; }
+    .viewport { display: flex; gap: 12px; margin-bottom: 12px; }
+    video, canvas { width: 480px; height: 270px; background: #000; border: 1px solid #334155; }
+    #metrics { background: #1e293b; padding: 10px; border-radius: 4px; font-size: 12px; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <h1>TC-SYNC-01: Dual-Stream Precise Frame Synchronization Benchmark</h1>
+  <div id="status">Initializing...</div>
+
+  <div class="viewport">
+    <video id="refVideo" src="sync_test_1080p60_15s.mp4" playsinline muted preload="auto"></video>
+    <canvas id="codeCanvas" width="480" height="270"></canvas>
+  </div>
+
+  <div id="metrics">Waiting...</div>
+
+  <script>
+    (async function runBenchmark() {
+      const statusEl = document.getElementById('status');
+      const metricsEl = document.getElementById('metrics');
+      const video = document.getElementById('refVideo');
+      const canvas = document.getElementById('codeCanvas');
+      const ctx = canvas.getContext('2d');
+
+      const FPS = 60.0;
+      const TOTAL_FRAMES = 900;
+      const DURATION_S = 15.0;
+
+      // Web Audio Hardware Master Clock setup
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      const audioCtx = new AudioContext({ sampleRate: 48000 });
+      if (audioCtx.state === 'suspended') {
+        await audioCtx.resume();
+      }
+
+      // Continuous inaudible tone to keep AudioContext hardware clock running
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      gain.gain.value = 0.0001;
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+
+      statusEl.textContent = 'Pre-buffering video...';
+
+      await new Promise((resolve) => {
+        if (video.readyState >= 4) resolve();
+        else video.oncanplaythrough = () => resolve();
+      });
+
+      statusEl.textContent = 'PLL Locking & Benchmark in Progress (900 Frames)...';
+
+      const telemetryRecords = [];
+      let baseAudioTime = null;
+      let baseMediaTime = null;
+      let isDone = false;
+      let lastVideoPts = -1;
+
+      // PI Servo state
+      const Kp = 0.15;
+      const Ki = 0.02;
+      let integralError = 0.0;
+      let currentRate = 1.0;
+
+      // Optical Ground Truth Checkpoint
+      const gtCanvas = document.createElement('canvas');
+      gtCanvas.width = 300;
+      gtCanvas.height = 80;
+      const gtCtx = gtCanvas.getContext('2d', { willReadFrequently: true });
+
+      function checkGroundTruthCheckpoint() {
+        gtCtx.drawImage(video, 1920 - 450, 40, 400, 100, 0, 0, 300, 80);
+        const imgData = gtCtx.getImageData(0, 0, 300, 80).data;
+        let nonZero = 0;
+        for (let i = 0; i < imgData.length; i += 4) {
+          if (imgData[i] > 100 || imgData[i+1] > 100 || imgData[i+2] > 100) nonZero++;
+        }
+        return nonZero > 50;
+      }
+
+      let gtPassedCheckpoints = 0;
+      let gtTotalCheckpoints = 0;
+
+      function onVideoFrame(now, metadata) {
+        if (isDone) return;
+
+        const mediaTime = metadata.mediaTime !== undefined ? metadata.mediaTime : video.currentTime;
+        if (mediaTime === lastVideoPts && lastVideoPts >= 0) {
+          video.requestVideoFrameCallback(onVideoFrame);
+          return;
+        }
+        lastVideoPts = mediaTime;
+
+        // Establish the zero-point on the very first decoded frame
+        if (baseAudioTime === null) {
+          baseAudioTime = audioCtx.currentTime;
+          baseMediaTime = mediaTime;
+        }
+
+        const tAudio = audioCtx.currentTime - baseAudioTime;
+        const tVideo = mediaTime - baseMediaTime;
+
+        // Phase error e(t) in ms: (t_video - t_audio)
+        // If e(t) < 0, video is slightly lagging audio clock -> increase playbackRate
+        const errorS = tVideo - tAudio;
+        const errorMs = errorS * 1000.0;
+
+        // Discrete Frame Calculation
+        const frameCode = Math.min(Math.floor(tAudio * FPS), TOTAL_FRAMES - 1);
+        const frameVideo = Math.min(Math.floor(tVideo * FPS), TOTAL_FRAMES - 1);
+        const deltaFrame = frameCode - frameVideo;
+
+        // PI Servo update (with deadband of 1.0ms to prevent actuator chatter)
+        if (Math.abs(errorS) > 0.001) {
+          integralError += errorS * (1.0 / FPS);
+          integralError = Math.max(-0.02, Math.min(0.02, integralError));
+          
+          let targetRate = 1.0 - Kp * errorS - Ki * integralError;
+          targetRate = Math.max(0.97, Math.min(1.03, targetRate));
+          
+          // Only apply rate change when delta > 0.002 to maintain smooth decode
+          if (Math.abs(targetRate - currentRate) > 0.002) {
+            currentRate = targetRate;
+            video.playbackRate = currentRate;
+          }
+        }
+
+        // Ground Truth verification at integer second checkpoints
+        let gtMatch = true;
+        if (frameVideo % 60 === 0 && frameVideo > 0) {
+          gtTotalCheckpoints++;
+          gtMatch = checkGroundTruthCheckpoint();
+          if (gtMatch) gtPassedCheckpoints++;
+        }
+
+        telemetryRecords.push({
+          frame: frameVideo,
+          t_audio_s: Number(tAudio.toFixed(6)),
+          t_video_pts_s: Number(tVideo.toFixed(6)),
+          e_t_ms: Number(errorMs.toFixed(3)),
+          delta_frame: deltaFrame,
+          servo_rate: Number(currentRate.toFixed(4)),
+          gt_match: gtMatch
+        });
+
+        // Fast canvas feedback every 30 frames
+        if (frameVideo % 30 === 0) {
+          ctx.clearRect(0, 0, 480, 270);
+          ctx.fillStyle = '#38bdf8';
+          ctx.font = '16px monospace';
+          ctx.fillText(`FRAME: ${frameVideo} / ${TOTAL_FRAMES}`, 20, 40);
+          ctx.fillText(`PHASE ERROR: ${errorMs.toFixed(2)} ms`, 20, 70);
+          ctx.fillText(`RATE: ${currentRate.toFixed(4)}`, 20, 100);
+
+          metricsEl.innerHTML = `
+            <strong>Sampled:</strong> ${telemetryRecords.length} / ${TOTAL_FRAMES}<br>
+            <strong>Phase Error:</strong> ${errorMs.toFixed(2)} ms<br>
+            <strong>ΔFrame:</strong> ${deltaFrame}<br>
+            <strong>Servo Rate:</strong> ${currentRate.toFixed(4)}
+          `;
+        }
+
+        if (telemetryRecords.length >= TOTAL_FRAMES || frameVideo >= TOTAL_FRAMES - 1 || tAudio >= DURATION_S + 0.2) {
+          isDone = true;
+          finishBenchmark();
+          return;
+        }
+
+        video.requestVideoFrameCallback(onVideoFrame);
+      }
+
+      async function finishBenchmark() {
+        video.pause();
+        osc.stop();
+        statusEl.textContent = 'Computing TC-SYNC-01 Audit Criteria...';
+
+        let maxDeltaFrame = 0;
+        let maxAbsErrorMs = 0.0;
+        let sumSquaredError = 0.0;
+
+        for (const rec of telemetryRecords) {
+          if (Math.abs(rec.delta_frame) > maxDeltaFrame) maxDeltaFrame = Math.abs(rec.delta_frame);
+          if (Math.abs(rec.e_t_ms) > maxAbsErrorMs) maxAbsErrorMs = Math.abs(rec.e_t_ms);
+          sumSquaredError += rec.e_t_ms * rec.e_t_ms;
+        }
+
+        const rmsJitterMs = Math.sqrt(sumSquaredError / telemetryRecords.length);
+        const gtMatchRate = gtTotalCheckpoints > 0 ? (gtPassedCheckpoints / gtTotalCheckpoints) * 100.0 : 100.0;
+
+        const passedCriterionA = maxDeltaFrame === 0;
+        const passedCriterionB = maxAbsErrorMs < 8.0;
+        const passedCriterionC = rmsJitterMs <= 3.5;
+        const overallPassed = passedCriterionA && passedCriterionB && passedCriterionC && gtMatchRate >= 99.0;
+
+        const summary = {
+          totalSamples: telemetryRecords.length,
+          maxDeltaFrame: maxDeltaFrame,
+          maxAbsErrorMs: Number(maxAbsErrorMs.toFixed(3)),
+          rmsJitterMs: Number(rmsJitterMs.toFixed(3)),
+          gtMatchRatePercent: Number(gtMatchRate.toFixed(2)),
+          criteriaResults: {
+            criterionA_ZeroFrameDisplacement: passedCriterionA ? 'PASSED' : 'FAILED',
+            criterionB_SubHalfFramePhaseLag: passedCriterionB ? 'PASSED' : 'FAILED',
+            criterionC_RmsJitterUnder3_5ms: passedCriterionC ? 'PASSED' : 'FAILED'
+          },
+          verdict: overallPassed ? 'TC_SYNC_01_PASSED' : 'TC_SYNC_01_FAILED'
+        };
+
+        statusEl.innerHTML = `<span style="color:${overallPassed ? '#22c55e' : '#ef4444'}; font-weight:bold;">
+          [${summary.verdict}] Max Error: ${summary.maxAbsErrorMs}ms, RMS: ${summary.rmsJitterMs}ms, ΔFrame: ${summary.maxDeltaFrame}
+        </span>`;
+
+        try {
+          await fetch('/api/submit_results', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ summary, telemetryRecords })
+          });
+          statusEl.textContent += ' (Saved)';
+        } catch (err) {
+          console.error('Failed to submit results:', err);
+        }
+      }
+
+      video.requestVideoFrameCallback(onVideoFrame);
+      try {
+        await video.play();
+      } catch (err) {
+        statusEl.textContent = 'Play failed: ' + err.message;
+      }
+    })();
+  </script>
+</body>
+</html>
