@@ -8,12 +8,13 @@
  *    to viewport (rAF commit + engine state readback).
  * 3. Latency (L): L = t1 - t0 (ms).
  * 4. Sample Workload (>= 100 Samples):
- *    - Part A: 40 discrete random keyframe jumps across 900-frame timeline (Cold Run / Cross-Act).
+ *    - Part A: 40 deterministic keyframe sampling table targets across 900-frame timeline (Cold Run / Cross-Act).
  *    - Part B: 60 sequential scrubbing drag frames simulating high-frequency user scrub (Hot Run).
  *    - Total: 100 samples.
  * 5. Criteria:
- *    - P95 Latency <= 16.67ms (1-frame 60fps budget).
+ *    - P95 Latency <= 16.67ms (Primary Criterion: 1-frame 60fps budget).
  *    - Mean Latency <= 12.0ms.
+ *    - Max Latency <= 33.4ms (Auditor Eve Secondary Hard Redline: 2-frame budget to prevent tail explosions).
  *    - Max Frame Error Δf ≡ 0 across all 100 samples (Zero cumulative drift).
  *    - Physical Variance Check: Latency series must exhibit natural hardware/rAF variance (spread > 0).
  *    - Zero dropped callbacks or timeout failures.
@@ -124,9 +125,17 @@ export async function runScrubLatencyBenchmark(): Promise<ScrubLatencySummary> {
 
   // Await studio interactive canvas and timeline readiness
   await harness.waitForCondition(
-    `Boolean(window.__VAC_STUDIO_READY__ && window.__VAC_TIMELINE_READY__)`,
-    10000
+    `Boolean(
+      window.__VAC_STUDIO_READY__ &&
+      window.__VAC_TIMELINE_READY__ &&
+      typeof window.__VAC_GET_REMOTION_CURRENT_FRAME__ === 'function' &&
+      window.__VAC_REMOTION_READY__
+    )`,
+    15000
   );
+
+  // Allow browser GPU pipelines and player canvas to settle before starting benchmark
+  await new Promise((r) => setTimeout(r, 800));
 
   console.log('[SCRUB-BENCHMARK] Timeline & Web Audio Master Clock verified ready.');
   console.log('[SCRUB-BENCHMARK] Executing 100-sample scrub benchmark (40 jumps + 60 drags)...');
@@ -176,6 +185,7 @@ export async function runScrubLatencyBenchmark(): Promise<ScrubLatencySummary> {
   const passed =
     p95Latency <= 16.67 &&
     meanLatency <= 12.0 &&
+    maxLatency <= 33.4 && // Auditor Eve secondary hard redline: max <= 33.4ms (2 frames)
     maxDelta === 0 &&
     rawResults.length >= 100 &&
     hasPhysicalVariance;

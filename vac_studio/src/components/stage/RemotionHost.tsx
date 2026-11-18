@@ -169,6 +169,7 @@ export const RemotionHost: React.FC<RemotionHostProps> = ({
     (window as any).__VAC_IS_REMOTION_PLAYING__ = () => {
       return playerRef.current ? playerRef.current.isPlaying() : false;
     };
+    (window as any).__VAC_REMOTION_READY__ = true;
     (window as any).__VAC_GET_REMOTION_CURRENT_FRAME__ = () => {
       return playerRef.current ? playerRef.current.getCurrentFrame() : 0;
     };

@@ -126,7 +126,18 @@ export function App() {
         passed: boolean;
       }> = [];
 
-      // Part A: 40 Discrete Keyframe Jumps across 900-frame timeline (Cold / Cross-Act Jumps)
+      // Ensure Remotion Player engine is fully mounted and ready before taking first sample
+      for (let attempt = 0; attempt < 100; attempt++) {
+        if (
+          typeof (window as any).__VAC_GET_REMOTION_CURRENT_FRAME__ === 'function' &&
+          (window as any).__VAC_REMOTION_READY__
+        ) {
+          break;
+        }
+        await new Promise((r) => setTimeout(r, 50));
+      }
+
+      // Part A: 40 Deterministic Keyframe Targets across 900-frame timeline (Cold Run / Cross-Act)
       const discreteTargets = [
         0, 25, 45, 90, 120, 135, 180, 210, 240, 269,
         270, 290, 300, 330, 360, 390, 420, 450, 480, 510,
@@ -144,10 +155,13 @@ export function App() {
         });
         const t1 = performance.now();
         const latency = +(t1 - t0).toFixed(3);
-        const actualFrame = typeof (window as any).__VAC_GET_REMOTION_CURRENT_FRAME__ === 'function'
+        const rawFrame = typeof (window as any).__VAC_GET_REMOTION_CURRENT_FRAME__ === 'function'
           ? (window as any).__VAC_GET_REMOTION_CURRENT_FRAME__()
-          : ((window as any).__CURRENT_RENDER_FRAME__ ?? target);
-        const deltaFrame = Math.abs(actualFrame - target);
+          : typeof (window as any).__CURRENT_RENDER_FRAME__ === 'number'
+          ? (window as any).__CURRENT_RENDER_FRAME__
+          : -1;
+        const actualFrame = typeof rawFrame === 'number' ? rawFrame : -1;
+        const deltaFrame = actualFrame >= 0 ? Math.abs(actualFrame - target) : 9999;
 
         records.push({
           sampleIndex: i + 1,
@@ -158,10 +172,10 @@ export function App() {
           renderTimeMs: +t1.toFixed(3),
           latencyMs: latency,
           deltaFrame,
-          passed: latency <= 16.67 && deltaFrame === 0
+          passed: latency <= 16.67 && deltaFrame === 0 && actualFrame >= 0
         });
         // Settle before next discrete jump
-        await new Promise((r) => setTimeout(r, 12));
+        await new Promise((r) => setTimeout(r, 8));
       }
 
       // Part B: 60 Continuous Scrubbing Drag Frames (Hot / Rapid Scrubbing Sweep)
@@ -174,10 +188,13 @@ export function App() {
         });
         const t1 = performance.now();
         const latency = +(t1 - t0).toFixed(3);
-        const actualFrame = typeof (window as any).__VAC_GET_REMOTION_CURRENT_FRAME__ === 'function'
+        const rawFrame = typeof (window as any).__VAC_GET_REMOTION_CURRENT_FRAME__ === 'function'
           ? (window as any).__VAC_GET_REMOTION_CURRENT_FRAME__()
-          : ((window as any).__CURRENT_RENDER_FRAME__ ?? target);
-        const deltaFrame = Math.abs(actualFrame - target);
+          : typeof (window as any).__CURRENT_RENDER_FRAME__ === 'number'
+          ? (window as any).__CURRENT_RENDER_FRAME__
+          : -1;
+        const actualFrame = typeof rawFrame === 'number' ? rawFrame : -1;
+        const deltaFrame = actualFrame >= 0 ? Math.abs(actualFrame - target) : 9999;
 
         records.push({
           sampleIndex: discreteTargets.length + i + 1,
@@ -188,10 +205,10 @@ export function App() {
           renderTimeMs: +t1.toFixed(3),
           latencyMs: latency,
           deltaFrame,
-          passed: latency <= 16.67 && deltaFrame === 0
+          passed: latency <= 16.67 && deltaFrame === 0 && actualFrame >= 0
         });
-        // Realistic 60fps drag interval
-        await new Promise((r) => setTimeout(r, 16));
+        // High-frequency continuous scrubbing interval (~120Hz/240Hz input dispatch cadence)
+        await new Promise((r) => setTimeout(r, 4));
       }
 
       return records;

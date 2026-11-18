@@ -1,21 +1,42 @@
 {
   "testCaseId": "TC-M1-SEEK",
   "standard": "ISO/IEC/IEEE 29148:2018",
-  "evaluatedAt": "2026-11-18T14:51:41.672Z",
+  "evaluatedAt": "2026-11-18T15:24:08.627Z",
   "clockArchitecture": {
     "engine": "Web Audio API Master Clock",
     "verificationModel": "Dual-tier (CI 128-sample quantum loop / Live hardware audio device)",
     "syncToleranceMs": "<= 1.0ms"
   },
-  "sampleCount": 90,
-  "metrics": {
-    "minLatencyMs": 0.1,
-    "meanLatencyMs": 0.27,
-    "p95LatencyMs": 0.6,
-    "maxLatencyMs": 0.8,
+  "sampleCount": 100,
+  "coldRunMetrics": {
+    "sampleCount": 40,
+    "minLatencyMs": 4.9,
+    "meanLatencyMs": 8.742,
+    "p95LatencyMs": 14.8,
+    "maxLatencyMs": 15.5,
+    "maxFrameDelta": 0
+  },
+  "hotRunMetrics": {
+    "sampleCount": 60,
+    "minLatencyMs": 8.3,
+    "meanLatencyMs": 11.707,
+    "p95LatencyMs": 13.5,
+    "maxLatencyMs": 13.7,
+    "maxFrameDelta": 0
+  },
+  "overallMetrics": {
+    "minLatencyMs": 4.9,
+    "meanLatencyMs": 10.521,
+    "p95LatencyMs": 13.7,
+    "maxLatencyMs": 15.5,
+    "stdDevMs": 2.24,
     "maxFrameDelta": 0,
     "budgetMs": 16.67,
-    "passRatePercent": 100
+    "passRatePercent": 100,
+    "outlierVerification": {
+      "minMaxSpreadMs": 10.6,
+      "hasPhysicalVariance": true
+    }
   },
   "verdict": "PASSED"
 }

@@ -1,7 +1,7 @@
 {
   "gateId": "M0_GATE_ACCEPTANCE",
   "standard": "ISO/IEC/IEEE 29148:2018",
-  "evaluatedAt": "2026-11-18T15:04:05.559Z",
+  "evaluatedAt": "2026-11-18T15:25:22.836Z",
   "environment": {
     "nodeVersion": "v22.22.2",
     "chromeVersion": "Chrome 157.0.8103.79",
@@ -11,22 +11,22 @@
     "criterion1_cold_start_8848": {
       "metric": "Full-stack launch to 8848 canvas interactive (Clean Vite cache)",
       "budget": "<= 2000ms",
-      "coldObserved": "1662ms",
-      "hotObserved": "757ms",
+      "coldObserved": "1548ms",
+      "hotObserved": "677ms",
       "status": "PASSED"
     },
     "criterion2_remotion_60fps_zero_drop": {
       "metric": "Bronze Heritage 15s 1080p60 continuous rendering",
       "totalFrames": 900,
       "droppedFrames": 0,
-      "averageFps": 60.14,
+      "averageFps": 60.07,
       "status": "PASSED"
     },
     "criterion3_hyperframes_seek_accuracy": {
       "metric": "Space Bunny postMessage deterministic frame seek",
       "sampleCount": 10,
       "maxFrameDelta": 0,
-      "meanLatencyMs": 72.37,
+      "meanLatencyMs": 77.51,
       "status": "PASSED"
     }
   },
