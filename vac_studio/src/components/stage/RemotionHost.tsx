@@ -76,6 +76,7 @@ export const RemotionHost: React.FC<RemotionHostProps> = ({
     lastTimeRef.current = now;
 
     const activeFrame = playerRef.current.getCurrentFrame();
+    (window as any).__CURRENT_RENDER_FRAME__ = activeFrame;
     const playing = playerRef.current.isPlaying() || isPlaying;
 
     if (playing) {
@@ -174,6 +175,7 @@ export const RemotionHost: React.FC<RemotionHostProps> = ({
     (window as any).__VAC_REMOTION_SEEK_DIRECT__ = (frame: number) => {
       if (playerRef.current) {
         playerRef.current.seekTo(frame);
+        (window as any).__CURRENT_RENDER_FRAME__ = playerRef.current.getCurrentFrame();
       }
     };
 
