@@ -10,7 +10,7 @@
       "expectedTimeS": 0,
       "ackFrame": 0,
       "frameDelta": 0,
-      "renderLatencyMs": 9.1,
+      "renderLatencyMs": 11.7,
       "status": "PASS"
     },
     {
@@ -18,7 +18,7 @@
       "expectedTimeS": 1,
       "ackFrame": 60,
       "frameDelta": 0,
-      "renderLatencyMs": 5.5,
+      "renderLatencyMs": 11.3,
       "status": "PASS"
     },
     {
@@ -26,7 +26,7 @@
       "expectedTimeS": 2.5,
       "ackFrame": 150,
       "frameDelta": 0,
-      "renderLatencyMs": 4.9,
+      "renderLatencyMs": 17.6,
       "status": "PASS"
     },
     {
@@ -34,7 +34,7 @@
       "expectedTimeS": 4.5,
       "ackFrame": 270,
       "frameDelta": 0,
-      "renderLatencyMs": 2.8,
+      "renderLatencyMs": 2.6,
       "status": "PASS"
     },
     {
@@ -42,7 +42,7 @@
       "expectedTimeS": 6,
       "ackFrame": 360,
       "frameDelta": 0,
-      "renderLatencyMs": 1.6,
+      "renderLatencyMs": 2.2,
       "status": "PASS"
     },
     {
@@ -50,7 +50,7 @@
       "expectedTimeS": 8,
       "ackFrame": 480,
       "frameDelta": 0,
-      "renderLatencyMs": 419.9,
+      "renderLatencyMs": 331.1,
       "status": "PASS"
     },
     {
@@ -58,7 +58,7 @@
       "expectedTimeS": 10,
       "ackFrame": 600,
       "frameDelta": 0,
-      "renderLatencyMs": 2.2,
+      "renderLatencyMs": 2.6,
       "status": "PASS"
     },
     {
@@ -66,7 +66,7 @@
       "expectedTimeS": 12.5,
       "ackFrame": 750,
       "frameDelta": 0,
-      "renderLatencyMs": 12.1,
+      "renderLatencyMs": 15.7,
       "status": "PASS"
     },
     {
@@ -74,7 +74,7 @@
       "expectedTimeS": 14,
       "ackFrame": 840,
       "frameDelta": 0,
-      "renderLatencyMs": 2.7,
+      "renderLatencyMs": 3.7,
       "status": "PASS"
     },
     {
@@ -82,14 +82,14 @@
       "expectedTimeS": 14.9833,
       "ackFrame": 899,
       "frameDelta": 0,
-      "renderLatencyMs": 297.6,
+      "renderLatencyMs": 393.8,
       "status": "PASS"
     }
   ],
   "metrics": {
     "maxFrameDelta": 0,
-    "meanRenderLatencyMs": 75.84,
-    "maxRenderLatencyMs": 419.9,
+    "meanRenderLatencyMs": 79.23,
+    "maxRenderLatencyMs": 393.8,
     "allExactMatches": true
   },
   "verdict": "PASSED"

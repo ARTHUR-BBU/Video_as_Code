@@ -1,16 +1,11 @@
 import React from 'react';
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
-import { BronzeVesselHero } from '../components/BronzeVesselHero';
 import { TOKENS } from '../theme/tokens';
 
 export const Act3: React.FC<{ frameProp?: number }> = ({ frameProp }) => {
   const remotionFrame = useCurrentFrame();
   const frame = frameProp !== undefined ? frameProp : remotionFrame;
   const { fps } = useVideoConfig();
-
-  // Wide camera view with subtle living hold micro-drift (0.35px/f, strictly obeying HB18)
-  const scale = interpolate(frame, [0, 270], [0.94, 0.98], { extrapolateRight: 'clamp' });
-  const panY = interpolate(frame, [0, 270], [30, 15], { extrapolateRight: 'clamp' });
 
   // Spring entrance for title
   const titleScale = spring({

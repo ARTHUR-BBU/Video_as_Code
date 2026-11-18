@@ -8,6 +8,7 @@
     "studio": "npm --prefix vac_studio run studio",
     "test:net": "npm --prefix vac_studio run test:net",
     "test:m0": "npm --prefix vac_studio run test:m0",
+    "test:m1": "npm --prefix vac_studio run test:m1",
     "build": "npm --prefix vac_studio run build"
   }
 }

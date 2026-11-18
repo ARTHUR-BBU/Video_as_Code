@@ -171,6 +171,11 @@ export const RemotionHost: React.FC<RemotionHostProps> = ({
     (window as any).__VAC_GET_REMOTION_CURRENT_FRAME__ = () => {
       return playerRef.current ? playerRef.current.getCurrentFrame() : 0;
     };
+    (window as any).__VAC_REMOTION_SEEK_DIRECT__ = (frame: number) => {
+      if (playerRef.current) {
+        playerRef.current.seekTo(frame);
+      }
+    };
 
     return () => {
       delete (window as any).__VAC_PLAY_REMOTION__;
@@ -178,6 +183,7 @@ export const RemotionHost: React.FC<RemotionHostProps> = ({
       delete (window as any).__VAC_GET_REMOTION_RECORDS__;
       delete (window as any).__VAC_IS_REMOTION_PLAYING__;
       delete (window as any).__VAC_GET_REMOTION_CURRENT_FRAME__;
+      delete (window as any).__VAC_REMOTION_SEEK_DIRECT__;
     };
   }, []);
 

@@ -1,17 +1,11 @@
 import React from 'react';
 import { interpolate, useCurrentFrame } from 'remotion';
-import { BronzeVesselHero } from '../components/BronzeVesselHero';
 import { MuseumAssetCard } from '../components/MuseumAssetCard';
 import { TOKENS } from '../theme/tokens';
 
 export const Act2: React.FC<{ frameProp?: number }> = ({ frameProp }) => {
   const remotionFrame = useCurrentFrame();
   const frame = frameProp !== undefined ? frameProp : remotionFrame;
-
-  // Camera transition to the cauldron's body & leg
-  const scale = interpolate(frame, [0, 360], [1.7, 1.35], { extrapolateRight: 'clamp' });
-  const panX = interpolate(frame, [0, 360], [-120, 60], { extrapolateRight: 'clamp' });
-  const panY = interpolate(frame, [0, 360], [-80, -20], { extrapolateRight: 'clamp' });
 
   // Entrance & Exit fades
   const enterOpacity = interpolate(frame, [0, 20], [0, 1], { extrapolateRight: 'clamp' });

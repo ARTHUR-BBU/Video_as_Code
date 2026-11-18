@@ -1,16 +1,10 @@
 import React from 'react';
 import { interpolate, useCurrentFrame } from 'remotion';
-import { BronzeVesselHero } from '../components/BronzeVesselHero';
 import { TOKENS } from '../theme/tokens';
 
 export const Act1: React.FC<{ frameProp?: number }> = ({ frameProp }) => {
   const remotionFrame = useCurrentFrame();
   const frame = frameProp !== undefined ? frameProp : remotionFrame;
-
-  // Macro camera pan across the intricate dragon relief on the lid
-  const scale = interpolate(frame, [0, 270], [2.4, 1.85], { extrapolateRight: 'clamp' });
-  const panX = interpolate(frame, [0, 270], [180, -80], { extrapolateRight: 'clamp' });
-  const panY = interpolate(frame, [0, 270], [240, 120], { extrapolateRight: 'clamp' });
 
   // Fragment 1: "Three thousand years." (f25 to f120)
   const frag1Opacity = interpolate(frame, [25, 45, 105, 125], [0, 1, 1, 0], {

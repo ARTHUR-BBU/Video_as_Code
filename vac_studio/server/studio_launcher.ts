@@ -8,7 +8,7 @@
 
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createServer, optimizeDeps, ViteDevServer } from 'vite';
+import { createServer, ViteDevServer } from 'vite';
 import { VacStudioDaemon } from './index.js';
 
 const __filename = fileURLToPath(import.meta.url);

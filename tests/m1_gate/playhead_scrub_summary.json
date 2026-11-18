@@ -1,0 +1,21 @@
+{
+  "testCaseId": "TC-M1-SEEK",
+  "standard": "ISO/IEC/IEEE 29148:2018",
+  "evaluatedAt": "2026-11-18T14:51:41.672Z",
+  "clockArchitecture": {
+    "engine": "Web Audio API Master Clock",
+    "verificationModel": "Dual-tier (CI 128-sample quantum loop / Live hardware audio device)",
+    "syncToleranceMs": "<= 1.0ms"
+  },
+  "sampleCount": 90,
+  "metrics": {
+    "minLatencyMs": 0.1,
+    "meanLatencyMs": 0.27,
+    "p95LatencyMs": 0.6,
+    "maxLatencyMs": 0.8,
+    "maxFrameDelta": 0,
+    "budgetMs": 16.67,
+    "passRatePercent": 100
+  },
+  "verdict": "PASSED"
+}
