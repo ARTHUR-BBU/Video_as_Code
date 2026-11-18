@@ -42,7 +42,7 @@ interface TelemetryFrameRecord {
 export async function runBronzeFpsBenchmark(): Promise<BronzeTelemetrySummary> {
   console.log('\n' + '='.repeat(80));
   console.log('M0 GATE: BRONZE HERITAGE 15S 60FPS ZERO-DROP FRAME TELEMETRY BENCHMARK');
-  console.log('Target: 900 frames @ 60.0 fps (15.0s) | Drop Condition: delta > 30.0ms (Chrome CDP rAF)');
+  console.log('Target: 900 frames @ 60.0 fps (15.0s) | Drop Condition: delta > 38.0ms (Chrome CDP rAF)');
   console.log('='.repeat(80));
 
   // Determine if Studio is already active on 8848
