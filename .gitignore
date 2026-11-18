@@ -33,6 +33,10 @@ yarn-error.log*
 /motion2code/
 /taste-skill/
 
+# Legacy Experimental Replicas (External Boundary Sanitization)
+/space_bunny_replica/
+/deconstruct/space_bunny/
+
 # OS & Editor Metadata
 .DS_Store
 Thumbs.db

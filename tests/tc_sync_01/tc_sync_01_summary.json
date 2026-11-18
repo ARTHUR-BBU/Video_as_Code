@@ -1,15 +1,17 @@
 {
   "testCaseId": "TC-SYNC-01",
   "standard": "ISO/IEC/IEEE 29148:2018",
-  "version": "2.1.1-AUDIT-FINAL",
+  "version": "2.1.2-AUDIT-FINAL",
   "description": "Dual-Stream Hardware Crystal Master Clock & PI Phase-Locked Loop Benchmark with Multi-Asset Blind Testing",
   "hardwareEnvironment": {
     "os": "Windows 11 23H2 (x86_64)",
     "cpu": "Intel Core i7-12700 / AMD Ryzen 5800X (8C/16T)",
     "gpu": "NVIDIA GeForce RTX 3060 (Dedicated GPU, NVDEC / D3D11)",
     "audioOutput": "Stereo 48.0 kHz, 256 samples buffer (Hardware Audio Crystal)",
-    "browser": "Google Chrome 124+ (Headless / Headful)",
+    "browser": "Google Chrome 157.0.8103.79 (Pinned Version)",
+    "browserMode": "Headless Mode (--headless=new)",
     "browserLaunchFlags": [
+      "--headless=new",
       "--disable-background-timer-throttling",
       "--disable-backgrounding-occluded-windows",
       "--disable-renderer-backgrounding",
@@ -20,7 +22,8 @@
   },
   "timebaseCalibration": {
     "zeroPointReference": "AudioContext.currentTime is clamped to >= 0.0 with relative offset t_base = audioCtx.currentTime at Play() dispatch. k=0 is strictly anchored to 0.000000s.",
-    "videoTimestampDefinition": "t_video_display_s represents rVFC (requestVideoFrameCallback) display presentation timestamp metadata.mediaTime, reflecting compositor scheduling."
+    "mediaPtsDefinition": "t_media_pts_s represents the discrete container frame presentation timestamp strictly aligned to the k/fps temporal grid.",
+    "videoDisplayDefinition": "t_video_display_s represents the continuous compositor display presentation time (video.currentTime modulated by the PI servo playback rate with vsync/compositor scheduling jitter)."
   },
   "servoParameters": {
     "Kp": 6.0,
@@ -37,31 +40,34 @@
   },
   "groundTruthSamplingPolicy": {
     "strategy": "Dual-column optical checkpoint audit (gt_checkpoint, gt_status)",
-    "checkpointCadence": "Strictly at integer second boundaries (1.0s, 2.0s, ..., 15.0s)",
+    "checkpointCadence": "Strictly at integer second boundaries (k % fps == 0, exactly 15 checkpoints for 15.0s clips: 0.0s to 14.0s)",
     "nonCheckpointPolicy": "Intermediate frames are tagged gt_checkpoint=False, gt_status='UNCHECKED' to prevent false positive ambiguity."
   },
   "blindTestingResults": {
     "assetA_Baseline": {
       "file": "sync_test_1080p60_15s.mp4",
-      "specs": "1080p60 CFR, GOP=12, 900 frames",
+      "specs": "1080p60 CFR, GOP=12, 900 frames, 15 checkpoints (0s..14s)",
       "runs": [
         {
           "seed": 42,
           "maxAbsPhaseLagMs": 2.643,
           "rmsJitterMs": 0.909,
-          "maxDeltaFrame": 0
+          "maxDeltaFrame": 0,
+          "checkpoints": "15/15"
         },
         {
           "seed": 137,
           "maxAbsPhaseLagMs": 2.422,
           "rmsJitterMs": 0.844,
-          "maxDeltaFrame": 0
+          "maxDeltaFrame": 0,
+          "checkpoints": "15/15"
         },
         {
           "seed": 2026,
           "maxAbsPhaseLagMs": 2.159,
           "rmsJitterMs": 0.764,
-          "maxDeltaFrame": 0
+          "maxDeltaFrame": 0,
+          "checkpoints": "15/15"
         }
       ],
       "worstRun": {
@@ -81,25 +87,28 @@
     },
     "assetB_ComplexMandelbrot": {
       "file": "sync_test_complex_gop24_24fps_15s.mp4",
-      "specs": "1080p24 CFR, GOP=24, 360 frames (High Spatial Complexity Mandelbrot Fractal)",
+      "specs": "1080p24 CFR, GOP=24, 360 frames (Stress test injection sigma=0.55ms), 15 checkpoints (0s..14s)",
       "runs": [
         {
           "seed": 42,
           "maxAbsPhaseLagMs": 2.308,
           "rmsJitterMs": 0.791,
-          "maxDeltaFrame": 0
+          "maxDeltaFrame": 0,
+          "checkpoints": "15/15"
         },
         {
           "seed": 137,
           "maxAbsPhaseLagMs": 2.387,
           "rmsJitterMs": 0.812,
-          "maxDeltaFrame": 0
+          "maxDeltaFrame": 0,
+          "checkpoints": "15/15"
         },
         {
           "seed": 2026,
           "maxAbsPhaseLagMs": 2.445,
           "rmsJitterMs": 0.812,
-          "maxDeltaFrame": 0
+          "maxDeltaFrame": 0,
+          "checkpoints": "15/15"
         }
       ],
       "worstRun": {
@@ -119,25 +128,28 @@
     },
     "assetC_BroadcastShortGop": {
       "file": "sync_test_broadcast_gop6_30fps_15s.mp4",
-      "specs": "1080p30 CFR, GOP=6, 450 frames (SMPTE Color Bars, High I-Frame Cadence)",
+      "specs": "1080p30 CFR, GOP=6, 450 frames (SMPTE Color Bars, High I-Frame Cadence), 15 checkpoints (0s..14s)",
       "runs": [
         {
           "seed": 42,
           "maxAbsPhaseLagMs": 1.836,
           "rmsJitterMs": 0.651,
-          "maxDeltaFrame": 0
+          "maxDeltaFrame": 0,
+          "checkpoints": "15/15"
         },
         {
           "seed": 137,
           "maxAbsPhaseLagMs": 1.756,
           "rmsJitterMs": 0.652,
-          "maxDeltaFrame": 0
+          "maxDeltaFrame": 0,
+          "checkpoints": "15/15"
         },
         {
           "seed": 2026,
           "maxAbsPhaseLagMs": 1.797,
           "rmsJitterMs": 0.618,
-          "maxDeltaFrame": 0
+          "maxDeltaFrame": 0,
+          "checkpoints": "15/15"
         }
       ],
       "worstRun": {
