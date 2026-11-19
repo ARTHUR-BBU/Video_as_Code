@@ -1,7 +1,7 @@
 {
   "testCaseId": "TC-AST-03",
   "standard": "ISO/IEC/IEEE 29148:2018 (PRD v2.1.2 §3.4 & §8.3)",
-  "evaluatedAt": "2026-11-19T04:08:20.807Z",
+  "evaluatedAt": "2026-11-19T04:52:19.476Z",
   "workload": {
     "targetFile": "fixtures/ast_sample_act1.tsx",
     "targetSceneId": "Scene02_Dynamic",
@@ -11,15 +11,14 @@
   "metrics": {
     "nodeSyntaxKind": "JsxExpression -> CallExpression",
     "isDynamicExpression": true,
-    "detectedOwnership": "UNKNOWN",
-    "readOnlyBadgeTagged": false,
-    "mutationBlocked": false,
-    "rejectionCode": "NONE",
-    "userWarningEmitted": false,
-    "warningMessageText": "",
+    "detectedOwnership": "OPAQUE_USER_CODE",
+    "readOnlyBadgeTagged": true,
+    "mutationBlocked": true,
+    "rejectionCode": "OPAQUE_USER_CODE_LOCKED",
+    "userWarningEmitted": true,
+    "warningMessageText": "检测到动态表达式控制，已锁定 GUI 回写以保护源码逻辑",
     "diskBytesModified": 0,
     "fileSha256Unchanged": true
   },
-  "verdict": "FAILED",
-  "failureReason": "SKELETON_AUDIT_MODE: AST Guard not yet implemented (Pending WBS-1.8)"
+  "verdict": "PASSED"
 }

@@ -1,7 +1,7 @@
 {
   "testCaseId": "TC-AST-01",
   "standard": "ISO/IEC/IEEE 29148:2018 (PRD v2.1.2 §3.3.1 & §8.3)",
-  "evaluatedAt": "2026-11-19T04:08:19.115Z",
+  "evaluatedAt": "2026-11-19T04:52:18.003Z",
   "workload": {
     "targetFile": "fixtures/ast_sample_act1.tsx",
     "targetSceneId": "Scene01",
@@ -10,16 +10,15 @@
     "toFrames": 285
   },
   "metrics": {
-    "gitDiffAddedLines": 0,
-    "gitDiffDeletedLines": 0,
-    "isStrictSingleLineDiff": false,
+    "gitDiffAddedLines": 1,
+    "gitDiffDeletedLines": 1,
+    "isStrictSingleLineDiff": true,
     "nonTargetLinesHashMatch": true,
     "commentIntegrityPercent": 100,
     "cstTriviaPreserved": true,
-    "zeroFormatPollution": false,
-    "reparseValidated": false,
-    "rawGitDiff": ""
+    "zeroFormatPollution": true,
+    "reparseValidated": true,
+    "rawGitDiff": "diff --git \"a/F:\\\\Video_as_Code\\\\vac_studio\\\\tests\\\\fixtures\\\\ast_sample_act1.tsx\" \"b/F:\\\\Video_as_Code\\\\vac_studio\\\\tests\\\\fixtures\\\\ast_sample_act1.staged.tsx\"\nindex 9f4aa90..7112dc9 100644\n--- \"a/F:\\\\Video_as_Code\\\\vac_studio\\\\tests\\\\fixtures\\\\ast_sample_act1.tsx\"\n+++ \"b/F:\\\\Video_as_Code\\\\vac_studio\\\\tests\\\\fixtures\\\\ast_sample_act1.staged.tsx\"\n@@ -44 +44 @@ export const SampleFilmComposition: React.FC<{ props?: any }> = ({ props }) => {\n-      <Sequence from={0} durationInFrames={270} name=\"Scene01\">\n+      <Sequence from={0} durationInFrames={285} name=\"Scene01\">"
   },
-  "verdict": "FAILED",
-  "failureReason": "SKELETON_AUDIT_MODE: AST Engine Emitter not yet implemented (Pending WBS-1.8)"
+  "verdict": "PASSED"
 }

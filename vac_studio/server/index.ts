@@ -1,7 +1,10 @@
 import http from 'node:http';
 import fs from 'node:fs';
+import path from 'node:path';
 import { WebSocketServer, WebSocket } from 'ws';
 import { probeAndBindPort } from './port_prober.js';
+import { attemptSceneMutation } from './ast_engine/guard.js';
+import { parseAstToMotionIR } from './ast_engine/parser.js';
 
 export interface VacDaemonConfig {
   startPort?: number;
@@ -266,25 +269,68 @@ export class VacStudioDaemon {
         );
         break;
 
-      case 'timeline.mutateSceneDuration':
-        // WBS-2.1 / M1 Implementation Target (Registered as explicit development stub)
-        const { sceneId, newDurationInFrames } = params ?? {};
-        ws.send(
-          JSON.stringify({
-            jsonrpc: '2.0',
-            result: {
-              status: 'STUB_NOT_IMPLEMENTED',
-              stub: true,
-              success: false,
-              sceneId: sceneId ?? 'Scene01',
-              requestedDurationInFrames: newDurationInFrames ?? 285,
-              gitDiffLines: 0,
-              message: 'WBS-2.1 pending MotionIR AST engine integration. RPC endpoint registered as explicit stub.'
-            },
-            id
-          })
-        );
+      case 'timeline.getMotionIR': {
+        const targetPath = params?.targetFile || path.resolve(process.cwd(), 'src', 'acts', 'Act1.tsx');
+        try {
+          const result = parseAstToMotionIR(targetPath);
+          ws.send(
+            JSON.stringify({
+              jsonrpc: '2.0',
+              result: {
+                status: 'SUCCESS',
+                scenes: result.scenes,
+                totalNodes: result.rawNodeCount
+              },
+              id
+            })
+          );
+        } catch (err: any) {
+          ws.send(
+            JSON.stringify({
+              jsonrpc: '2.0',
+              error: { code: -32000, message: err.message },
+              id
+            })
+          );
+        }
         break;
+      }
+
+      case 'timeline.mutateSceneDuration': {
+        const { sceneId, newDurationInFrames, targetFile } = params ?? {};
+        const targetPath = targetFile || path.resolve(process.cwd(), 'tests', 'fixtures', 'ast_sample_act1.tsx');
+
+        attemptSceneMutation(targetPath, sceneId ?? 'Scene01', Number(newDurationInFrames) || 285)
+          .then((res) => {
+            ws.send(
+              JSON.stringify({
+                jsonrpc: '2.0',
+                result: {
+                  status: res.code,
+                  success: res.success,
+                  blocked: res.blocked,
+                  ownership: res.ownership,
+                  isReadOnly: res.isReadOnly,
+                  warningMessage: res.warningMessage,
+                  bytesModified: res.bytesModified,
+                  sceneId: res.sceneId,
+                  duration: res.duration
+                },
+                id
+              })
+            );
+          })
+          .catch((err: any) => {
+            ws.send(
+              JSON.stringify({
+                jsonrpc: '2.0',
+                error: { code: -32000, message: err.message },
+                id
+              })
+            );
+          });
+        break;
+      }
 
       default:
         ws.send(

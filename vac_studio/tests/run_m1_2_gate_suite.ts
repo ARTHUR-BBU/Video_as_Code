@@ -25,6 +25,7 @@ export interface M1_2GateMasterSummary {
   evaluatedAt: string;
   totalDurationSeconds: number;
   mode: 'SKELETON_AUDIT' | 'GATE_EVALUATION';
+  skeletonArmed?: boolean;
   criteria: {
     c1_mdzPatching: {
       standard: 'PRD v2.1.2 §3.3.1 & §8.3 TC-AST-01';
@@ -162,16 +163,22 @@ export async function runM1_2GateMasterSuite(): Promise<M1_2GateMasterSummary> {
   console.log(`Total Verification Time: ${totalDuration}s`);
   console.log('='.repeat(80) + '\n');
 
-  if (isSkeletonAuditMode) {
-    // In skeleton audit mode: verify that all 3 runners executed, generated metrics, and reached the hooks
-    const skeletonHarnessesArmed =
-      c1Result.testCaseId === 'TC-AST-01' &&
-      c2Result.testCaseId === 'TC-AST-02' &&
-      c3Result.testCaseId === 'TC-AST-03';
+  const skeletonHarnessesArmed =
+    c1Result.testCaseId === 'TC-AST-01' &&
+    c2Result.testCaseId === 'TC-AST-02' &&
+    c3Result.testCaseId === 'TC-AST-03' &&
+    c1Result.metrics !== undefined &&
+    c2Result.metrics !== undefined &&
+    c3Result.metrics !== undefined;
 
+  masterSummary.skeletonArmed = skeletonHarnessesArmed;
+
+  if (isSkeletonAuditMode) {
     if (skeletonHarnessesArmed) {
       console.log('[SKELETON-AUDIT-VERIFIED] All 3 test harnesses, fixtures, AST analyzers, and diff scripts are fully operational!');
       console.log('[SKELETON-AUDIT-READY] Test skeleton is armed and ready for external auditor review.');
+    } else {
+      console.error('[SKELETON-AUDIT-ERROR] One or more test harnesses failed to arm properly!');
     }
   }
 
@@ -183,7 +190,12 @@ if (import.meta.url === `file:///${process.argv[1].replace(/\\/g, '/')}`) {
   runM1_2GateMasterSuite()
     .then((summary) => {
       if (isSkeletonAuditMode) {
-        process.exit(0);
+        if (summary.skeletonArmed) {
+          process.exit(0);
+        } else {
+          console.error('[SKELETON-AUDIT-FATAL] Skeletons not armed, exiting with code 1');
+          process.exit(1);
+        }
       } else if (summary.overallVerdict !== 'M1_2_GATE_PASSED') {
         process.exit(1);
       }

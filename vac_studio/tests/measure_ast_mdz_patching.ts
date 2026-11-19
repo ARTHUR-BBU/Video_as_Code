@@ -81,6 +81,7 @@ export async function runAstMdzPatchBenchmark(): Promise<AstMdzPatchSummary> {
   let addedLines = 0;
   let deletedLines = 0;
   let rawGitDiff = '';
+
   try {
     const numstatOutput = execSync(`git diff --no-index --numstat "${templatePath}" "${stagingPath}"`, {
       encoding: 'utf-8'
@@ -90,29 +91,18 @@ export async function runAstMdzPatchBenchmark(): Promise<AstMdzPatchSummary> {
       addedLines = parseInt(parts[0], 10) || 0;
       deletedLines = parseInt(parts[1], 10) || 0;
     }
+  } catch (err: any) {
+    const parts = (err.stdout ?? '').trim().split('\t');
+    addedLines = parseInt(parts[0], 10) || 0;
+    deletedLines = parseInt(parts[1], 10) || 0;
+  }
+
+  try {
     rawGitDiff = execSync(`git diff --no-index -U0 "${templatePath}" "${stagingPath}"`, {
       encoding: 'utf-8'
     }).trim();
   } catch (err: any) {
-    if (err.stdout) {
-      const lines = err.stdout.trim().split('\n');
-      rawGitDiff = err.stdout.trim();
-      // Parse numstat if error thrown by non-zero git diff exit
-      try {
-        const numstat = execSync(`git diff --no-index --numstat "${templatePath}" "${stagingPath}"`, {
-          encoding: 'utf-8'
-        }).trim();
-        const parts = numstat.split('\t');
-        addedLines = parseInt(parts[0], 10) || 0;
-        deletedLines = parseInt(parts[1], 10) || 0;
-      } catch (numErr: any) {
-        if (numErr.stdout) {
-          const parts = numErr.stdout.trim().split('\t');
-          addedLines = parseInt(parts[0], 10) || 0;
-          deletedLines = parseInt(parts[1], 10) || 0;
-        }
-      }
-    }
+    rawGitDiff = (err.stdout ?? '').trim();
   }
 
   // 3. Verify CST Trivia & Comment Preservation
@@ -124,21 +114,40 @@ export async function runAstMdzPatchBenchmark(): Promise<AstMdzPatchSummary> {
   const commentIntegrity = hasCriticalComment && hasBitwiseCode ? 100 : 0;
   const isStrictSingleLineDiff = addedLines === 1 && deletedLines === 1;
 
-  // 4. Non-target lines byte-level integrity check (Excluding modified line)
+  // 4. Non-target lines byte-level integrity check (Excluding ONLY Scene01 target line)
+  // Scene02_Dynamic and all other lines MUST remain in the hash check!
+  const isScene01Line = (l: string) => l.includes('name="Scene01"') && l.includes('durationInFrames');
   const origLines = originalContent.split(/\r?\n/);
   const stagedLines = stagedContent.split(/\r?\n/);
   let nonTargetLinesMatch = false;
 
   if (origLines.length === stagedLines.length && origLines.length > 0) {
-    const origFiltered = origLines.filter((l) => !l.includes('durationInFrames'));
-    const stagedFiltered = stagedLines.filter((l) => !l.includes('durationInFrames'));
+    const origFiltered = origLines.filter((l) => !isScene01Line(l));
+    const stagedFiltered = stagedLines.filter((l) => !isScene01Line(l));
     const origHash = crypto.createHash('sha256').update(origFiltered.join('\n')).digest('hex');
     const stagedHash = crypto.createHash('sha256').update(stagedFiltered.join('\n')).digest('hex');
     nonTargetLinesMatch = origHash === stagedHash;
   }
 
-  const zeroFormatPollution = isStrictSingleLineDiff && commentIntegrity === 100 && nonTargetLinesMatch;
-  const reparseValidated = actualCommittedValue === 285 && stagedContent.includes('durationInFrames={285}');
+  // Verify Scene02_Dynamic is 100% untouched
+  const scene02Preserved = stagedContent.includes('durationInFrames={calcDynamicDuration(props)} name="Scene02_Dynamic"');
+
+  // Verify target diff strictly modified Scene01 and NOT Scene02
+  const diffTargetsScene01 =
+    rawGitDiff.includes('name="Scene01"') &&
+    rawGitDiff.includes('durationInFrames={270}') &&
+    rawGitDiff.includes('durationInFrames={285}');
+
+  const zeroFormatPollution =
+    isStrictSingleLineDiff &&
+    commentIntegrity === 100 &&
+    nonTargetLinesMatch &&
+    scene02Preserved;
+
+  const reparseValidated =
+    actualCommittedValue === 285 &&
+    stagedContent.includes('durationInFrames={285} name="Scene01"') &&
+    diffTargetsScene01;
 
   let passed = isStrictSingleLineDiff && zeroFormatPollution && reparseValidated;
   let failureReason: string | undefined;
@@ -149,6 +158,12 @@ export async function runAstMdzPatchBenchmark(): Promise<AstMdzPatchSummary> {
   } else if (!isStrictSingleLineDiff) {
     passed = false;
     failureReason = `Diff violation: added=${addedLines}, deleted=${deletedLines} (Expected strictly 1 add, 1 del)`;
+  } else if (!diffTargetsScene01) {
+    passed = false;
+    failureReason = 'Target mismatch: diff did not specifically target Scene01 durationInFrames';
+  } else if (!scene02Preserved) {
+    passed = false;
+    failureReason = 'Tamper violation: Scene02_Dynamic duration was modified or corrupted';
   } else if (!zeroFormatPollution) {
     passed = false;
     failureReason = 'Format pollution detected: non-target lines or CST trivia was modified';
