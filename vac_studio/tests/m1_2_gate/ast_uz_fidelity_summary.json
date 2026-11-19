@@ -1,0 +1,26 @@
+{
+  "testCaseId": "TC-AST-02",
+  "standard": "ISO/IEC/IEEE 29148:2018 (PRD v2.1.2 §3.3.2 & §8.3)",
+  "evaluatedAt": "2026-11-19T04:08:20.783Z",
+  "workload": {
+    "targetFile": "fixtures/ast_sample_act1.tsx",
+    "unmanagedSymbol": "useComplexPhysics",
+    "bitwiseOperatorsTested": [
+      "<<",
+      "^",
+      ">>"
+    ]
+  },
+  "metrics": {
+    "originalUzNodeCount": 83,
+    "stagedUzNodeCount": 83,
+    "uzNodeCountMatch": true,
+    "tokenStreamFidelityPercent": 100,
+    "uzTextByteMatch": true,
+    "commentTriviaPreserved": true,
+    "tscDiagnosticsCount": 0,
+    "compilationPassed": true
+  },
+  "verdict": "FAILED",
+  "failureReason": "SKELETON_AUDIT_MODE: AST Engine Emitter not yet implemented (Pending WBS-1.8)"
+}

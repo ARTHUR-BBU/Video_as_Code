@@ -1,0 +1,46 @@
+{
+  "acceptanceGate": "M1.2_MOTION_IR_AST_BIDIRECTIONAL_SYNCHRONIZATION",
+  "standard": "ISO/IEC/IEEE 29148:2018 (PRD v2.1.2 §3.3, §3.4, §8.3)",
+  "evaluatedAt": "2026-11-19T04:08:20.808Z",
+  "totalDurationSeconds": 1.9,
+  "mode": "GATE_EVALUATION",
+  "criteria": {
+    "c1_mdzPatching": {
+      "standard": "PRD v2.1.2 §3.3.1 & §8.3 TC-AST-01",
+      "targetFile": "fixtures/ast_sample_act1.tsx",
+      "isStrictSingleLineDiff": false,
+      "gitDiffAddedLines": 0,
+      "gitDiffDeletedLines": 0,
+      "zeroFormatPollution": false,
+      "commentIntegrityPercent": 100,
+      "verdict": "FAILED",
+      "failureReason": "SKELETON_AUDIT_MODE: AST Engine Emitter not yet implemented (Pending WBS-1.8)"
+    },
+    "c2_uzFidelity": {
+      "standard": "PRD v2.1.2 §3.3.2 & §8.3 TC-AST-02",
+      "targetFile": "fixtures/ast_sample_act1.tsx",
+      "unmanagedSymbol": "useComplexPhysics",
+      "nodeCountMatch": true,
+      "tokenStreamFidelityPercent": 100,
+      "uzTextByteMatch": true,
+      "tscDiagnosticsCount": 0,
+      "compilationPassed": true,
+      "verdict": "FAILED",
+      "failureReason": "SKELETON_AUDIT_MODE: AST Engine Emitter not yet implemented (Pending WBS-1.8)"
+    },
+    "c3_readonlyGuard": {
+      "standard": "PRD v2.1.2 §3.4 & §8.3 TC-AST-03",
+      "targetFile": "fixtures/ast_sample_act1.tsx",
+      "targetSceneId": "Scene02_Dynamic",
+      "isDynamicExpression": true,
+      "detectedOwnership": "UNKNOWN",
+      "mutationBlocked": false,
+      "rejectionCode": "NONE",
+      "diskBytesModified": 0,
+      "fileSha256Unchanged": true,
+      "verdict": "FAILED",
+      "failureReason": "SKELETON_AUDIT_MODE: AST Guard not yet implemented (Pending WBS-1.8)"
+    }
+  },
+  "overallVerdict": "M1_2_GATE_FAILED"
+}

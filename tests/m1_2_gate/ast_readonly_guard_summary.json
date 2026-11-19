@@ -1,0 +1,25 @@
+{
+  "testCaseId": "TC-AST-03",
+  "standard": "ISO/IEC/IEEE 29148:2018 (PRD v2.1.2 §3.4 & §8.3)",
+  "evaluatedAt": "2026-11-19T04:08:20.807Z",
+  "workload": {
+    "targetFile": "fixtures/ast_sample_act1.tsx",
+    "targetSceneId": "Scene02_Dynamic",
+    "dynamicExpression": "calcDynamicDuration(props)",
+    "attemptedMutationValue": 450
+  },
+  "metrics": {
+    "nodeSyntaxKind": "JsxExpression -> CallExpression",
+    "isDynamicExpression": true,
+    "detectedOwnership": "UNKNOWN",
+    "readOnlyBadgeTagged": false,
+    "mutationBlocked": false,
+    "rejectionCode": "NONE",
+    "userWarningEmitted": false,
+    "warningMessageText": "",
+    "diskBytesModified": 0,
+    "fileSha256Unchanged": true
+  },
+  "verdict": "FAILED",
+  "failureReason": "SKELETON_AUDIT_MODE: AST Guard not yet implemented (Pending WBS-1.8)"
+}
