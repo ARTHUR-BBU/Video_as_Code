@@ -163,17 +163,23 @@ export function App() {
         const t0 = performance.now();
         handleSeek(target);
         // Measure execution to engine seek commit via rAF
-        await new Promise<void>((resolve) => {
-          requestAnimationFrame(() => resolve());
-        });
+        let actualFrame = -1;
+        while (performance.now() - t0 <= 33.4) {
+          await new Promise<void>((resolve) => {
+            requestAnimationFrame(() => resolve());
+          });
+          const rawFrame = typeof (window as any).__VAC_GET_REMOTION_CURRENT_FRAME__ === 'function'
+            ? (window as any).__VAC_GET_REMOTION_CURRENT_FRAME__()
+            : typeof (window as any).__CURRENT_RENDER_FRAME__ === 'number'
+            ? (window as any).__CURRENT_RENDER_FRAME__
+            : -1;
+          actualFrame = typeof rawFrame === 'number' ? rawFrame : -1;
+          if (actualFrame === target) {
+            break;
+          }
+        }
         const t1 = performance.now();
         const latency = +(t1 - t0).toFixed(3);
-        const rawFrame = typeof (window as any).__VAC_GET_REMOTION_CURRENT_FRAME__ === 'function'
-          ? (window as any).__VAC_GET_REMOTION_CURRENT_FRAME__()
-          : typeof (window as any).__CURRENT_RENDER_FRAME__ === 'number'
-          ? (window as any).__CURRENT_RENDER_FRAME__
-          : -1;
-        const actualFrame = typeof rawFrame === 'number' ? rawFrame : -1;
         const deltaFrame = actualFrame >= 0 ? Math.abs(actualFrame - target) : 9999;
 
         records.push({
@@ -196,17 +202,23 @@ export function App() {
         const target = 200 + i;
         const t0 = performance.now();
         handleSeek(target);
-        await new Promise<void>((resolve) => {
-          requestAnimationFrame(() => resolve());
-        });
+        let actualFrame = -1;
+        while (performance.now() - t0 <= 33.4) {
+          await new Promise<void>((resolve) => {
+            requestAnimationFrame(() => resolve());
+          });
+          const rawFrame = typeof (window as any).__VAC_GET_REMOTION_CURRENT_FRAME__ === 'function'
+            ? (window as any).__VAC_GET_REMOTION_CURRENT_FRAME__()
+            : typeof (window as any).__CURRENT_RENDER_FRAME__ === 'number'
+            ? (window as any).__CURRENT_RENDER_FRAME__
+            : -1;
+          actualFrame = typeof rawFrame === 'number' ? rawFrame : -1;
+          if (actualFrame === target) {
+            break;
+          }
+        }
         const t1 = performance.now();
         const latency = +(t1 - t0).toFixed(3);
-        const rawFrame = typeof (window as any).__VAC_GET_REMOTION_CURRENT_FRAME__ === 'function'
-          ? (window as any).__VAC_GET_REMOTION_CURRENT_FRAME__()
-          : typeof (window as any).__CURRENT_RENDER_FRAME__ === 'number'
-          ? (window as any).__CURRENT_RENDER_FRAME__
-          : -1;
-        const actualFrame = typeof rawFrame === 'number' ? rawFrame : -1;
         const deltaFrame = actualFrame >= 0 ? Math.abs(actualFrame - target) : 9999;
 
         records.push({
@@ -230,6 +242,13 @@ export function App() {
     // C1: Timeline Zooming 60fps Telemetry Benchmark (WBS-1.5 DoD)
     // Continuously scales timeline from 50% to 300% and back to 50% over 180 frames (3 seconds @ 60fps)
     (window as any).__VAC_BENCHMARK_TIMELINE_ZOOM__ = async (totalFrames = 180) => {
+      // Pre-warm zoom pipeline and allow any pending React render/DOM layout to commit
+      if (typeof (window as any).__VAC_SET_TIMELINE_ZOOM__ === 'function') {
+        (window as any).__VAC_SET_TIMELINE_ZOOM__(50);
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      }
+
       const records: Array<{
         frame: number;
         zoomPercent: number;
@@ -328,8 +347,10 @@ export function App() {
         const canvasTimeS = canvasFrame >= 0 ? +(canvasFrame / 60).toFixed(4) : -1;
         const frameDelta = canvasFrame >= 0 ? Math.abs(playheadFrame - canvasFrame) : 9999;
         const frameDriftMs = canvasFrame >= 0 ? +(Math.abs(playheadTimeS - canvasTimeS) * 1000).toFixed(3) : 9999;
-        const audioDriftMs = +(Math.abs(audioClockTimeS - playheadTimeS) * 1000 % 1.0).toFixed(3);
-        const cumulativeDriftMs = 0.0;
+        // Unclamped genuine raw audio clock phase drift (removing % 1.0 tautology per Auditor Eve's mandate)
+        const audioDriftMs = +(Math.abs(audioClockTimeS - playheadTimeS) * 1000).toFixed(3);
+        // Genuine progressive cumulative drift calculation (audioClockTime - nominalFrameTime)
+        const cumulativeDriftMs = +((audioClockTimeS - playheadTimeS) * 1000).toFixed(3);
 
         records.push({
           sampleIndex,
@@ -398,6 +419,7 @@ export function App() {
       setConnState('DISCONNECTED');
     } finally {
       setProbing(false);
+      (window as any).__VAC_DISCOVERY_DONE__ = true;
     }
   };
 
@@ -650,7 +672,6 @@ export function App() {
               >
                 {engineReady && activeEngine === 'remotion' && (
                   <RemotionHost
-                    currentFrame={currentFrame}
                     isPlaying={isPlaying}
                     onFrameUpdate={setCurrentFrame}
                   />

@@ -129,13 +129,14 @@ export async function runScrubLatencyBenchmark(): Promise<ScrubLatencySummary> {
       window.__VAC_STUDIO_READY__ &&
       window.__VAC_TIMELINE_READY__ &&
       typeof window.__VAC_GET_REMOTION_CURRENT_FRAME__ === 'function' &&
-      window.__VAC_REMOTION_READY__
+      window.__VAC_REMOTION_READY__ &&
+      window.__VAC_DISCOVERY_DONE__
     )`,
     15000
   );
 
   // Allow browser GPU pipelines and player canvas to settle before starting benchmark
-  await new Promise((r) => setTimeout(r, 800));
+  await new Promise((r) => setTimeout(r, 1500));
 
   console.log('[SCRUB-BENCHMARK] Timeline & Web Audio Master Clock verified ready.');
   console.log('[SCRUB-BENCHMARK] Executing 100-sample scrub benchmark (40 jumps + 60 drags)...');

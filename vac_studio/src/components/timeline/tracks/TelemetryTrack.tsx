@@ -23,7 +23,7 @@ interface TelemetryTrackProps {
   astSyncStatus?: 'CLEAN' | 'DIRTY' | 'SYNCING' | 'LOCKED';
 }
 
-export const TelemetryTrack: React.FC<TelemetryTrackProps> = ({
+export const TelemetryTrack: React.FC<TelemetryTrackProps> = React.memo(({
   telemetry = [],
   totalFrames = 900,
   currentFps = 60.0,
@@ -100,4 +100,4 @@ export const TelemetryTrack: React.FC<TelemetryTrackProps> = ({
       </div>
     </div>
   );
-};
+});

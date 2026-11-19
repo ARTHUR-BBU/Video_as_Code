@@ -113,12 +113,16 @@ export class ChromeCdpHarness {
     });
   }
 
-  async evaluate<T = any>(expression: string, awaitPromise = false): Promise<T> {
-    const res = await this.send('Runtime.evaluate', {
-      expression,
-      awaitPromise,
-      returnByValue: true
-    });
+  async evaluate<T = any>(expression: string, awaitPromise = false, timeoutMs = 30000): Promise<T> {
+    const res = await this.send(
+      'Runtime.evaluate',
+      {
+        expression,
+        awaitPromise,
+        returnByValue: true
+      },
+      timeoutMs
+    );
     return res?.result?.value;
   }
 
@@ -139,7 +143,11 @@ export class ChromeCdpHarness {
   close() {
     try {
       this.ws?.close();
-      this.chrome.kill();
+      if (process.platform === 'win32' && this.chrome.pid) {
+        spawn('taskkill', ['/pid', String(this.chrome.pid), '/T', '/F']);
+      } else {
+        this.chrome.kill();
+      }
     } catch {}
   }
 }

@@ -11,14 +11,12 @@ export interface FpsTelemetryRecord {
 }
 
 interface RemotionHostProps {
-  currentFrame: number;
   isPlaying: boolean;
   onFrameUpdate?: (frame: number) => void;
   onTelemetryUpdate?: (stats: { fps: number; droppedFrames: number; totalFrames: number }) => void;
 }
 
-export const RemotionHost: React.FC<RemotionHostProps> = ({
-  currentFrame,
+export const RemotionHost: React.FC<RemotionHostProps> = React.memo(({
   isPlaying,
   onFrameUpdate,
   onTelemetryUpdate
@@ -44,16 +42,6 @@ export const RemotionHost: React.FC<RemotionHostProps> = ({
   }>>([]);
   const playbackStartTimeRef = useRef<number>(0);
   const lastRecordedFrameRef = useRef<number>(-1);
-
-  // Synchronize external playhead seek
-  useEffect(() => {
-    if (!isPlaying && playerRef.current) {
-      const current = playerRef.current.getCurrentFrame();
-      if (current !== currentFrame) {
-        playerRef.current.seekTo(currentFrame);
-      }
-    }
-  }, [currentFrame, isPlaying]);
 
   // Synchronize play/pause
   useEffect(() => {
@@ -124,18 +112,28 @@ export const RemotionHost: React.FC<RemotionHostProps> = ({
       }
     }
 
-    animFrameIdRef.current = requestAnimationFrame(sampleLoop);
+    if (playing) {
+      animFrameIdRef.current = requestAnimationFrame(sampleLoop);
+    }
   }, [isPlaying, onFrameUpdate, onTelemetryUpdate]);
 
   useEffect(() => {
+    if (!isPlaying) {
+      if (animFrameIdRef.current !== null) {
+        cancelAnimationFrame(animFrameIdRef.current);
+        animFrameIdRef.current = null;
+      }
+      return;
+    }
     lastTimeRef.current = performance.now();
     animFrameIdRef.current = requestAnimationFrame(sampleLoop);
     return () => {
       if (animFrameIdRef.current !== null) {
         cancelAnimationFrame(animFrameIdRef.current);
+        animFrameIdRef.current = null;
       }
     };
-  }, [sampleLoop]);
+  }, [isPlaying, sampleLoop]);
 
   // Expose test automation hooks to window for CDP measurement
   useEffect(() => {
@@ -173,6 +171,11 @@ export const RemotionHost: React.FC<RemotionHostProps> = ({
     (window as any).__VAC_GET_REMOTION_CURRENT_FRAME__ = () => {
       return playerRef.current ? playerRef.current.getCurrentFrame() : 0;
     };
+    const onFrameCommit = (e: { detail: { frame: number } }) => {
+      (window as any).__CURRENT_RENDER_FRAME__ = e.detail.frame;
+    };
+    playerRef.current?.addEventListener('seeked', onFrameCommit);
+    playerRef.current?.addEventListener('frameupdate', onFrameCommit);
     (window as any).__VAC_REMOTION_SEEK_DIRECT__ = (frame: number) => {
       if (playerRef.current) {
         playerRef.current.seekTo(frame);
@@ -181,6 +184,8 @@ export const RemotionHost: React.FC<RemotionHostProps> = ({
     };
 
     return () => {
+      playerRef.current?.removeEventListener('seeked', onFrameCommit);
+      playerRef.current?.removeEventListener('frameupdate', onFrameCommit);
       delete (window as any).__VAC_PLAY_REMOTION__;
       delete (window as any).__VAC_PAUSE_REMOTION__;
       delete (window as any).__VAC_GET_REMOTION_RECORDS__;
@@ -230,4 +235,4 @@ export const RemotionHost: React.FC<RemotionHostProps> = ({
       </div>
     </div>
   );
-};
+});

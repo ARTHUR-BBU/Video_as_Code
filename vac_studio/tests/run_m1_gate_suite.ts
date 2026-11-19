@@ -10,6 +10,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { launchStudio, StudioInstance } from '../server/studio_launcher.js';
 import { runTimelineZoomBenchmark, TimelineZoomSummary } from './measure_timeline_zoom.js';
 import { runPlayheadDriftBenchmark, PlayheadDriftSummary } from './measure_playhead_drift.js';
 import { runScrubLatencyBenchmark, ScrubLatencySummary } from './measure_scrub_latency.js';
@@ -61,14 +62,27 @@ export async function runM1GateMasterSuite(): Promise<M1GateMasterSummary> {
   console.log('Standard: ISO/IEC/IEEE 29148:2018 | Five-Track Precision Timeline & Audio Sync');
   console.log('='.repeat(80));
 
-  // 1. Run Criterion 1 (Zoom 60fps & 1-frame ruler)
-  const c1Result: TimelineZoomSummary = await runTimelineZoomBenchmark();
+  let sharedStudio: StudioInstance | null = null;
+  try {
+    const res = await fetch('http://127.0.0.1:8848');
+    if (!res.ok) throw new Error('NOT_RUNNING');
+  } catch {
+    console.log('[M1-SUITE] Launching persistent Studio instance for master suite...');
+    sharedStudio = await launchStudio({ viewportPort: 8848, daemonStartPort: 9720 });
+    await new Promise((r) => setTimeout(r, 1000));
+  }
 
-  // 2. Run Criterion 2 (Playhead vs Canvas Δf ≡ 0 & Audio Drift)
-  const c2Result: PlayheadDriftSummary = await runPlayheadDriftBenchmark();
+  try {
+    // 1. Run Criterion 1 (Zoom 60fps & 1-frame ruler)
+    const c1Result: TimelineZoomSummary = await runTimelineZoomBenchmark();
+    await new Promise((r) => setTimeout(r, 1200));
 
-  // 3. Run Criterion 3 (100-Sample Scrub & Seek Latency)
-  const c3Result: ScrubLatencySummary = await runScrubLatencyBenchmark();
+    // 2. Run Criterion 2 (Playhead vs Canvas Δf ≡ 0 & Audio Drift)
+    const c2Result: PlayheadDriftSummary = await runPlayheadDriftBenchmark();
+    await new Promise((r) => setTimeout(r, 1200));
+
+    // 3. Run Criterion 3 (100-Sample Scrub & Seek Latency)
+    const c3Result: ScrubLatencySummary = await runScrubLatencyBenchmark();
 
   const totalDuration = +((performance.now() - tStart) / 1000).toFixed(2);
 
@@ -138,7 +152,12 @@ export async function runM1GateMasterSuite(): Promise<M1GateMasterSummary> {
   console.log('='.repeat(80));
   console.log(`[MASTER REPORT] ${masterPath}\n`);
 
-  return masterSummary;
+    return masterSummary;
+  } finally {
+    if (sharedStudio) {
+      await sharedStudio.stop();
+    }
+  }
 }
 
 if (import.meta.url === `file:///${process.argv[1].replace(/\\/g, '/')}`) {

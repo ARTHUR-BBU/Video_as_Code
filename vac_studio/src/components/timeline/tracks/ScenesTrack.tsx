@@ -21,7 +21,7 @@ interface ScenesTrackProps {
   onSelectScene?: (sceneId: string) => void;
 }
 
-export const ScenesTrack: React.FC<ScenesTrackProps> = ({
+export const ScenesTrack: React.FC<ScenesTrackProps> = React.memo(({
   scenes,
   totalFrames = 900,
   zoom: _zoom,
@@ -90,4 +90,4 @@ export const ScenesTrack: React.FC<ScenesTrackProps> = ({
       </div>
     </div>
   );
-};
+});

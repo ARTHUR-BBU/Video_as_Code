@@ -19,7 +19,7 @@ interface FragmentsTrackProps {
   zoom?: number;
 }
 
-export const FragmentsTrack: React.FC<FragmentsTrackProps> = ({
+export const FragmentsTrack: React.FC<FragmentsTrackProps> = React.memo(({
   fragments,
   totalFrames = 900,
   zoom: _zoom
@@ -87,4 +87,4 @@ export const FragmentsTrack: React.FC<FragmentsTrackProps> = ({
       </div>
     </div>
   );
-};
+});

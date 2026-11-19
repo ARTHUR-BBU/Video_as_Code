@@ -184,7 +184,6 @@ export const RigidTimeline: React.FC<RigidTimelineProps> = ({
           <ScenesTrack
             scenes={motionIR.tracks.scenes}
             totalFrames={totalFrames}
-            zoom={zoom}
             selectedSceneId={selectedSceneId}
             onSelectScene={setSelectedSceneId}
           />
@@ -193,14 +192,12 @@ export const RigidTimeline: React.FC<RigidTimelineProps> = ({
           <FragmentsTrack
             fragments={motionIR.tracks.fragments}
             totalFrames={totalFrames}
-            zoom={zoom}
           />
 
           {/* Track 4: Earshot Audio & Cues */}
           <AudioCuesTrack
             audioCues={motionIR.tracks.audioCues}
             totalFrames={totalFrames}
-            zoom={zoom}
           />
 
           {/* Track 5: Realtime Telemetry */}

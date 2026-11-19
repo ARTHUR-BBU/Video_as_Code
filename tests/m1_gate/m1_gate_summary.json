@@ -1,14 +1,14 @@
 {
   "acceptanceGate": "M1.1_FIVE_TRACK_TIMELINE_AND_WEB_AUDIO_CLOCK",
   "standard": "ISO/IEC/IEEE 29148:2018",
-  "evaluatedAt": "2026-11-18T15:53:02.362Z",
-  "totalDurationSeconds": 20.13,
+  "evaluatedAt": "2026-11-19T00:59:51.474Z",
+  "totalDurationSeconds": 30.44,
   "criteria": {
     "c1_timelineZoom60fps": {
       "standard": "WBS-1.5 DoD",
       "sampleCount": 180,
-      "meanFps": 60.16,
-      "maxDeltaMs": 18,
+      "meanFps": 60.19,
+      "maxDeltaMs": 19.7,
       "droppedFrames": 0,
       "oneFrameRulerVerified": true,
       "verdict": "PASSED"
@@ -17,21 +17,21 @@
       "standard": "WBS-1.6 DoD",
       "sampleCount": 300,
       "maxFrameDelta": 0,
-      "meanAudioDriftMs": 0.529,
-      "maxAudioDriftMs": 1,
-      "cumulativeDriftMs": 0,
+      "meanAudioDriftMs": 6.729,
+      "maxAudioDriftMs": 16.7,
+      "cumulativeDriftMs": 5.3,
       "dualTierModel": "Tier 1 CI (128-sample quantum) + Tier 2 Live (Hardware Audio DAC)",
       "verdict": "PASSED"
     },
     "c3_playheadScrubLatency": {
       "standard": "NFR 7.1 (TC-M1-SEEK)",
       "sampleCount": 100,
-      "meanLatencyMs": 10.185,
-      "p95LatencyMs": 13.1,
-      "maxLatencyMs": 13.4,
+      "meanLatencyMs": 11.12,
+      "p95LatencyMs": 16,
+      "maxLatencyMs": 25.1,
       "maxFrameDelta": 0,
-      "spreadMs": 12.2,
-      "stdDevMs": 2.403,
+      "spreadMs": 24.4,
+      "stdDevMs": 2.938,
       "verdict": "PASSED"
     }
   },

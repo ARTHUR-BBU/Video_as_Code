@@ -73,6 +73,8 @@ export async function runTimelineZoomBenchmark(): Promise<TimelineZoomSummary> {
     `Boolean(
       window.__VAC_STUDIO_READY__ &&
       window.__VAC_TIMELINE_READY__ &&
+      window.__VAC_REMOTION_READY__ &&
+      window.__VAC_DISCOVERY_DONE__ &&
       typeof window.__VAC_BENCHMARK_TIMELINE_ZOOM__ === 'function'
     )`,
     15000
@@ -80,7 +82,7 @@ export async function runTimelineZoomBenchmark(): Promise<TimelineZoomSummary> {
 
   console.log('[ZOOM-BENCHMARK] Timeline zoom hooks verified ready.');
   // Allow browser threads, Vite asset caches, and GPU pipelines to settle
-  await new Promise((r) => setTimeout(r, 800));
+  await new Promise((r) => setTimeout(r, 1500));
 
   console.log('[ZOOM-BENCHMARK] Executing 180-frame continuous zooming telemetry (50% -> 300% -> 50%)...');
 

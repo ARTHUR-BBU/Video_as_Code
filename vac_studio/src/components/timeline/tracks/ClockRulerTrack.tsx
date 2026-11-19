@@ -19,7 +19,7 @@ interface ClockRulerTrackProps {
   width?: number;
 }
 
-export const ClockRulerTrack: React.FC<ClockRulerTrackProps> = ({
+export const ClockRulerTrack: React.FC<ClockRulerTrackProps> = React.memo(({
   totalFrames = 900,
   fps = 60,
   bpm = 120,
@@ -130,4 +130,4 @@ export const ClockRulerTrack: React.FC<ClockRulerTrackProps> = ({
       />
     </div>
   );
-};
+});

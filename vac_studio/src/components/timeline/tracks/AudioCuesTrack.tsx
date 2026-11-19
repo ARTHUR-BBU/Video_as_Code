@@ -19,7 +19,7 @@ interface AudioCuesTrackProps {
   zoom?: number;
 }
 
-export const AudioCuesTrack: React.FC<AudioCuesTrackProps> = ({
+export const AudioCuesTrack: React.FC<AudioCuesTrackProps> = React.memo(({
   audioCues,
   totalFrames = 900,
   zoom: _zoom
@@ -74,4 +74,4 @@ export const AudioCuesTrack: React.FC<AudioCuesTrackProps> = ({
       </div>
     </div>
   );
-};
+});
