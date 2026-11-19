@@ -298,9 +298,32 @@ export class VacStudioDaemon {
 
       case 'timeline.mutateSceneDuration': {
         const { sceneId, newDurationInFrames, targetFile } = params ?? {};
+        if (!sceneId || typeof sceneId !== 'string') {
+          ws.send(
+            JSON.stringify({
+              jsonrpc: '2.0',
+              error: { code: -32602, message: 'Invalid params: sceneId is required and must be a string' },
+              id
+            })
+          );
+          break;
+        }
+
+        const durationNum = Number(newDurationInFrames);
+        if (typeof newDurationInFrames === 'undefined' || isNaN(durationNum) || durationNum <= 0 || !Number.isInteger(durationNum)) {
+          ws.send(
+            JSON.stringify({
+              jsonrpc: '2.0',
+              error: { code: -32602, message: 'Invalid params: newDurationInFrames must be a strictly positive integer' },
+              id
+            })
+          );
+          break;
+        }
+
         const targetPath = targetFile || path.resolve(process.cwd(), 'tests', 'fixtures', 'ast_sample_act1.tsx');
 
-        attemptSceneMutation(targetPath, sceneId ?? 'Scene01', Number(newDurationInFrames) || 285)
+        attemptSceneMutation(targetPath, sceneId, durationNum)
           .then((res) => {
             ws.send(
               JSON.stringify({
