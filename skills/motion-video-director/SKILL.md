@@ -279,3 +279,14 @@ Agent 严禁在后台执行长阻塞任务而保持沉默：
    - 运行 `skills/cinetic/scripts/audio/listen.py` 导出 `sound_sheet.png` (声谱与对齐标记)。
    - 运行 HB1–HB20 自检清单、`ffmpeg freezedetect`、`frame_diff` 运动曲线与 `cold-seek` 校验，并给出逐项定量合规判定。
 4. **交付最终成品与自检报告**：附带视觉印样与声学测量数据向用户汇报交付！
+
+---
+
+## 七、 持续升级与复盘加固机制 (Skill Evolution & Post-Mortem Protocol)
+
+本 Skill 体系为**活体进化系统**，每次外部审计打回、生产捕获真 Bug 或引入外部新能力后，强制执行四步演进闭环（完整踩坑档案见 [`references/evolution-and-lessons-learned.md`](references/evolution-and-lessons-learned.md)）：
+
+1. **根因归类**：区分代码真缺陷、契约/路径漂移与环境差异，拒绝情绪化修补或假绿票；
+2. **规则化闸**：所有新教训优先转化为**可执行脚本、JSON Schema 或 frontmatter 互斥规则**（不满足于只写文字提醒）；
+3. **独立证据与防回归**：测试证据必须独立于被测模块（如独立 SHA-256、独立帧读回），动核心引擎必跑历史门禁防回归；
+4. **双端同步与不可变交付**：保持工作区 `skills/` 与全局 `~/.gemini/config/skills/` 哈希一致，执行 `git push origin main --tags` + `git ls-remote` 鉴真，对外汇报一律附**不可变 Commit SHA**（零本机盘符）。
