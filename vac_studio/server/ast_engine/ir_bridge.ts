@@ -118,6 +118,7 @@ export function blueprintToMotionIR(bp: BlueprintJson, projectId = 'deconstructe
       audioCues.push({
         id: a.id ?? `${sceneId}-cue-${aIdx + 1}`,
         soundId: a.sound_id,
+        sceneId,
         triggerFrame: a.trigger_frame !== undefined ? to60(a.trigger_frame) : startFrame,
         offsetMs: a.offset_ms ?? 0,
         bedDb: a.bed_db ?? 6.0
@@ -157,6 +158,7 @@ export function blueprintToMotionIR(bp: BlueprintJson, projectId = 'deconstructe
     meta: {
       projectId,
       fps: 60, // PRD §3.2 rigid 60fps master clock contract (rescaled from srcFps above)
+      sourceFps: srcFps,
       bpm: bp.meta?.bpm ?? 120,
       totalDurationFrames: totalFrames
     },
@@ -174,9 +176,12 @@ export function blueprintToMotionIR(bp: BlueprintJson, projectId = 'deconstructe
   };
 }
 
-export function motionIRToBlueprint(ir: MotionIR, targetFps = 60): BlueprintJson {
-  const outFps = targetFps > 0 ? targetFps : 60;
+export function motionIRToBlueprint(ir: MotionIR, targetFps?: number): BlueprintJson {
+  const requestedFps = targetFps ?? ir.meta.sourceFps ?? 60;
+  const outFps = requestedFps > 0 ? requestedFps : 60;
   const from60 = (f: number) => Math.round((f * outFps) / 60);
+
+  const topLevelAudioCues = ir.tracks.audioCues.filter((a) => !a.sceneId);
 
   return {
     meta: {
@@ -197,6 +202,7 @@ export function motionIRToBlueprint(ir: MotionIR, targetFps = 60): BlueprintJson
     },
     scenes: ir.tracks.scenes.map((s) => {
       const sceneFrags = ir.tracks.fragments.filter((f) => f.sceneId === s.id);
+      const sceneCues = ir.tracks.audioCues.filter((a) => a.sceneId === s.id);
       return {
         id: s.id,
         name: s.name ?? s.id,
@@ -213,15 +219,26 @@ export function motionIRToBlueprint(ir: MotionIR, targetFps = 60): BlueprintJson
                 hold_frames: from60(f.holdFrames)
               }))
             }
+          : undefined,
+        audio_cues: sceneCues.length
+          ? sceneCues.map((a) => ({
+              id: a.id,
+              sound_id: a.soundId,
+              trigger_frame: from60(a.triggerFrame),
+              offset_ms: a.offsetMs,
+              bed_db: a.bedDb
+            }))
           : undefined
       };
     }),
-    audio_cues: ir.tracks.audioCues.map((a) => ({
-      id: a.id,
-      sound_id: a.soundId,
-      trigger_frame: from60(a.triggerFrame),
-      offset_ms: a.offsetMs,
-      bed_db: a.bedDb
-    }))
+    audio_cues: topLevelAudioCues.length
+      ? topLevelAudioCues.map((a) => ({
+          id: a.id,
+          sound_id: a.soundId,
+          trigger_frame: from60(a.triggerFrame),
+          offset_ms: a.offsetMs,
+          bed_db: a.bedDb
+        }))
+      : undefined
   };
 }

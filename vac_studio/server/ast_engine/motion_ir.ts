@@ -35,6 +35,7 @@ export interface FragmentTrackNode {
 export interface AudioCueTrackNode {
   id: string;
   soundId: string;
+  sceneId?: string;
   triggerFrame: number;
   offsetMs: number;
   bedDb: number;
@@ -52,6 +53,7 @@ export interface MotionIR {
   meta: {
     projectId: string;
     fps: 60;
+    sourceFps?: number;
     bpm: number;
     totalDurationFrames: number;
   };
