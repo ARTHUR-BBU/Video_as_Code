@@ -38,6 +38,23 @@ yarn-error.log*
 /space_bunny_replica/
 /deconstruct/space_bunny/
 
+# Root-Level Scratch Media, Ad-Hoc Exports & Local Pipelines (Kept off Git)
+/*.mp4
+/*.mov
+/*.wav
+/*.jpg
+/image*.png
+/snap_shot_*.png
+/physics_of_gluten_contact_sheet.png
+/*.html
+/timeline.json
+/ref_frames_detail/
+/tweet_inspect/
+/output/
+/pipeline_*/
+/run_pipeline.py
+/.agents/
+
 # OS & Editor Metadata
 .DS_Store
 Thumbs.db

@@ -1,8 +1,8 @@
 {
   "acceptanceGate": "M1.2_MOTION_IR_AST_BIDIRECTIONAL_SYNCHRONIZATION",
   "standard": "ISO/IEC/IEEE 29148:2018 (PRD v2.1.2 §3.3, §3.4, §8.3)",
-  "evaluatedAt": "2026-11-20T05:58:09.020Z",
-  "totalDurationSeconds": 7.82,
+  "evaluatedAt": "2026-11-20T08:52:38.921Z",
+  "totalDurationSeconds": 6,
   "mode": "GATE_EVALUATION",
   "criteria": {
     "c1_mdzPatching": {
