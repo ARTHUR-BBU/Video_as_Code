@@ -1,0 +1,42 @@
+name: Video-as-Code Automated Gate CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  gate:
+    name: Build, IR Round-Trip, M1.2 AST & Skills Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: vac_studio/package-lock.json
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install VAC Studio dependencies
+        run: npm --prefix vac_studio ci
+
+      - name: TypeScript & Vite Production Build
+        run: npm --prefix vac_studio run build
+
+      - name: MotionIR <-> Blueprint Lossless Round-Trip Gate (Lesson A5)
+        run: npm --prefix vac_studio run test:ir
+
+      - name: M1.2 AST Bidirectional Sync Gate (TC-AST-01/02/03)
+        run: npm --prefix vac_studio run test:m1:2
+
+      - name: Skill Architecture & Routing Audit Gate (A1/A2/A3/A4/A6)
+        run: npm --prefix vac_studio run test:skills

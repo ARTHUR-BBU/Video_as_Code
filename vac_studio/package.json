@@ -16,7 +16,7 @@
     "test:m1": "npx tsx tests/run_m1_gate_suite.ts",
     "test:m1:2": "npx tsx tests/run_m1_2_gate_suite.ts",
     "test:ir": "npx tsx tests/test_ir_bridge_roundtrip.ts",
-    "test:skills": "python ../skills/motion-video-director/scripts/audit_skills.py"
+    "test:skills": "python3 ../skills/motion-video-director/scripts/audit_skills.py"
   },
   "dependencies": {
     "@remotion/player": "^4.0.544",
