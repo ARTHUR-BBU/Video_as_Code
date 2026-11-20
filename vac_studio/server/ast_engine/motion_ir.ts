@@ -10,6 +10,7 @@ export type CodeOwnership = 'MANAGED_DECLARATIVE' | 'OPAQUE_USER_CODE';
 
 export interface SceneTrackNode {
   id: string;
+  name?: string;
   sourceFile: string;
   startFrame: number;
   durationFrames: number;

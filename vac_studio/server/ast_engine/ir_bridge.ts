@@ -3,10 +3,10 @@
  * Standard: ISO/IEC/IEEE 29148:2018 | PRD v2.1.2 §3.2
  *
  * Bidirectionally maps `motion_blueprint.json` (produced by `skills/motion-video-deconstruct`)
- * into VAC Studio's canonical `MotionIR` model across all 3 core tracks:
- *   1. `tracks.scenes`
+ * into VAC Studio's canonical 60fps `MotionIR` model across all 3 core tracks:
+ *   1. `tracks.scenes` (with source-fps -> 60fps frame rescaling & `name` preservation)
  *   2. `tracks.fragments` (from blueprint `concurrent_tracks.copy` or top-level `fragments`)
- *   3. `tracks.audioCues` (from blueprint `audio_cues` / `sound_cues`)
+ *   3. `tracks.audioCues` (from blueprint `audio_cues`)
  */
 
 import { AudioCueTrackNode, FragmentTrackNode, MotionIR, SceneTrackNode } from './motion_ir.js';
@@ -80,17 +80,22 @@ function countWords(text: string): number {
 }
 
 export function blueprintToMotionIR(bp: BlueprintJson, projectId = 'deconstructed_project'): MotionIR {
+  // Normalize arbitrary source frame rates (e.g. 24/25/30fps) onto the rigid 60fps MotionIR clock
+  const srcFps = bp.meta?.fps && bp.meta.fps > 0 ? bp.meta.fps : 60;
+  const to60 = (f: number) => Math.round((f * 60) / srcFps);
+
   const scenes: SceneTrackNode[] = [];
   const fragments: FragmentTrackNode[] = [];
   const audioCues: AudioCueTrackNode[] = [];
 
   (bp.scenes ?? []).forEach((s, idx) => {
     const sceneId = s.id || s.name || `scene-${String(idx + 1).padStart(2, '0')}`;
-    const startFrame = s.timeline?.start_frame ?? 0;
-    const durationFrames = s.timeline?.duration_frames ?? 180;
+    const startFrame = to60(s.timeline?.start_frame ?? 0);
+    const durationFrames = to60(s.timeline?.duration_frames ?? Math.round(3 * srcFps));
 
     scenes.push({
       id: sceneId,
+      name: s.name ?? sceneId,
       sourceFile: bp.meta?.source_file ?? 'src/acts/Act1.tsx',
       startFrame,
       durationFrames,
@@ -103,8 +108,8 @@ export function blueprintToMotionIR(bp: BlueprintJson, projectId = 'deconstructe
         id: c.id ?? `${sceneId}-frag-${cIdx + 1}`,
         text: c.text,
         sceneId,
-        startFrame: c.start_frame ?? startFrame,
-        holdFrames: c.hold_frames ?? 60,
+        startFrame: c.start_frame !== undefined ? to60(c.start_frame) : startFrame,
+        holdFrames: c.hold_frames !== undefined ? to60(c.hold_frames) : 60,
         wordCount: countWords(c.text)
       });
     });
@@ -113,7 +118,7 @@ export function blueprintToMotionIR(bp: BlueprintJson, projectId = 'deconstructe
       audioCues.push({
         id: a.id ?? `${sceneId}-cue-${aIdx + 1}`,
         soundId: a.sound_id,
-        triggerFrame: a.trigger_frame ?? startFrame,
+        triggerFrame: a.trigger_frame !== undefined ? to60(a.trigger_frame) : startFrame,
         offsetMs: a.offset_ms ?? 0,
         bedDb: a.bed_db ?? 6.0
       });
@@ -126,8 +131,8 @@ export function blueprintToMotionIR(bp: BlueprintJson, projectId = 'deconstructe
       id: f.id ?? `frag-${idx + 1}`,
       text: f.text,
       sceneId: f.scene_id ?? scenes[0]?.id ?? 'scene-01',
-      startFrame: f.start_frame ?? 0,
-      holdFrames: f.hold_frames ?? 60,
+      startFrame: to60(f.start_frame ?? 0),
+      holdFrames: f.hold_frames !== undefined ? to60(f.hold_frames) : 60,
       wordCount: countWords(f.text)
     });
   });
@@ -136,21 +141,22 @@ export function blueprintToMotionIR(bp: BlueprintJson, projectId = 'deconstructe
     audioCues.push({
       id: a.id ?? `cue-${idx + 1}`,
       soundId: a.sound_id,
-      triggerFrame: a.trigger_frame ?? 0,
+      triggerFrame: to60(a.trigger_frame ?? 0),
       offsetMs: a.offset_ms ?? 0,
       bedDb: a.bed_db ?? 6.0
     });
   });
 
   const totalFrames =
-    bp.meta?.total_frames ??
-    scenes.reduce((acc, s) => Math.max(acc, s.startFrame + s.durationFrames), 0);
+    bp.meta?.total_frames !== undefined
+      ? to60(bp.meta.total_frames)
+      : scenes.reduce((acc, s) => Math.max(acc, s.startFrame + s.durationFrames), 0);
 
   return {
     version: '2.1.0',
     meta: {
       projectId,
-      fps: 60, // PRD §3.2 rigid 60fps master clock contract
+      fps: 60, // PRD §3.2 rigid 60fps master clock contract (rescaled from srcFps above)
       bpm: bp.meta?.bpm ?? 120,
       totalDurationFrames: totalFrames
     },
@@ -168,12 +174,15 @@ export function blueprintToMotionIR(bp: BlueprintJson, projectId = 'deconstructe
   };
 }
 
-export function motionIRToBlueprint(ir: MotionIR): BlueprintJson {
+export function motionIRToBlueprint(ir: MotionIR, targetFps = 60): BlueprintJson {
+  const outFps = targetFps > 0 ? targetFps : 60;
+  const from60 = (f: number) => Math.round((f * outFps) / 60);
+
   return {
     meta: {
       source_file: ir.tracks.scenes[0]?.sourceFile ?? 'src/acts/Act1.tsx',
-      fps: ir.meta.fps,
-      total_frames: ir.meta.totalDurationFrames,
+      fps: outFps,
+      total_frames: from60(ir.meta.totalDurationFrames),
       bpm: ir.meta.bpm
     },
     design_tokens: {
@@ -190,18 +199,18 @@ export function motionIRToBlueprint(ir: MotionIR): BlueprintJson {
       const sceneFrags = ir.tracks.fragments.filter((f) => f.sceneId === s.id);
       return {
         id: s.id,
-        name: s.id,
+        name: s.name ?? s.id,
         timeline: {
-          start_frame: s.startFrame,
-          duration_frames: s.durationFrames
+          start_frame: from60(s.startFrame),
+          duration_frames: from60(s.durationFrames)
         },
         concurrent_tracks: sceneFrags.length
           ? {
               copy: sceneFrags.map((f) => ({
                 id: f.id,
                 text: f.text,
-                start_frame: f.startFrame,
-                hold_frames: f.holdFrames
+                start_frame: from60(f.startFrame),
+                hold_frames: from60(f.holdFrames)
               }))
             }
           : undefined
@@ -210,7 +219,7 @@ export function motionIRToBlueprint(ir: MotionIR): BlueprintJson {
     audio_cues: ir.tracks.audioCues.map((a) => ({
       id: a.id,
       sound_id: a.soundId,
-      trigger_frame: a.triggerFrame,
+      trigger_frame: from60(a.triggerFrame),
       offset_ms: a.offsetMs,
       bed_db: a.bedDb
     }))
