@@ -1,6 +1,6 @@
 ---
 name: motion-video-deconstruct
-description: "Reverse-engineers reference videos, launch films, kinetic typography reels, and UI demos directly into reconstructible, code-driven video projects (Motion Blueprints). Remotion-first architecture with full HyperFrames dual-target compatibility. Extracts temporal cuts, 60fps BPM clocks, Swiss Bento grid layouts, kinetic easing/spring physics, carrier objects, and earshot audio cues into a standardized motion_blueprint.json contract, and compiles it into modular Remotion TSX or HyperFrames HTML code."
+description: "Reverse-engineer an existing reference MP4 video into a structured motion_blueprint.json and modular Remotion TSX (or HyperFrames) project. Use ONLY when decomposing a reference video into multi-scene Remotion architecture. Do NOT use for flat single-file inline SVG+GSAP loops (`motion2code`) or creating a new video from scratch without a reference (`cinetic`)."
 ---
 
 # Motion Video Deconstruct: Video-to-Code Reverse Engineering (`motion-video-deconstruct`)

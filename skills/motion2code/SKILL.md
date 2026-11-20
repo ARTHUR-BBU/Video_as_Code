@@ -1,14 +1,10 @@
 ---
 name: motion2code
 description: >-
-  Rebuilds an AI-generated (or any) flat motion design video as clean, editable code: inline SVG shapes animated by
-  one GSAP timeline, seekable frame by frame, looping seamlessly, checked side by side against the source; and
-  optionally turns an interface recording into a real interactive website (GSAP ScrollTrigger, real clicks).
-  Ships scripts to study the video (frames, cuts, contact sheet, exact palette), render the code to mp4/GIF through
-  anim.seek, compare it with the source frame by frame and check the loop seam and page contract. Use when the user
-  wants a video, GIF, Lottie-like clip, motion design shot, animated logo, UI screen recording or AI video
-  "recreated in code", "converted to SVG/GSAP", "made into an HTML animation" or "made into a real site". Not for
-  photographic footage, 3D rendering or video editing.
+  Rebuild an existing flat 2D motion design video, GIF, Lottie-like clip, animated logo, or UI screen recording into a
+  self-contained inline SVG + single GSAP timeline HTML file (or interactive ScrollTrigger `site.html`), checked frame
+  by frame against the source. Do NOT use for creating new videos from scratch (`cinetic`), Remotion multi-scene
+  blueprints (`motion-video-deconstruct`), photographic footage, or 3D rendering (`web-sims`).
 license: MIT
 metadata:
   hermes:

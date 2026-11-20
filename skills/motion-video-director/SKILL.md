@@ -1,6 +1,6 @@
 ---
 name: motion-video-director
-description: "MANDATORY SUPREME DIRECTOR & ARCHITECT for all Motion Video, Video-as-Code, kinetic typography, programmatic animation, dynamic UI demos, product launch films, and audiovisual productions. Orchestrates the 4-stage pipeline: (0) Intake & Dispatch (Remotion Tier-1, HyperFrames, motion2code SVG+GSAP Vector Loop, MoviePy, Web-Sims, Manim/Blender 3D), (1) Motion Director Layer (M.O.T.I.O.N. Charter, Metaphor, Swiss Bento Grid, Beat Clock, Closed-Form Kinematics & Lens Depth Tracking, Carrier Object, 273 Technique Pick), (2) Multi-Engine Code Assembly & Dual-Engine Sound Design (earshot 0.4+ with 252-sound bank, launch preset, bed-relative mix & psychoacoustic offset + real-sound/Openverse), and (3) Dual Sensory Gate (Anti-Slop Hard Bans HB1–HB20, 4×2 Visual Contact Sheet, freezedetect + frame_diff motion curve + cold-seek + hero >=170px check, earshot Auditory Spectrogram Sheet & post-AAC ebur128). Eliminates static slideshow slop and frozen renders in favor of true cinematic motion design."
+description: "Orchestration policy and quantitative QA gate (`scripts/motion_qa_gate.py`, HB1–HB20) for code-driven video production. Do NOT select as the primary leaf generator when `cinetic` (new Remotion/HyperFrames film), `motion2code` (flat SVG+GSAP rebuild), `motion-video-deconstruct` (MP4 to Remotion blueprint), or `taste-skill` (web/app UI) directly matches. Load alongside the chosen leaf skill to enforce M.O.T.I.O.N. standards, closed-form kinematics, and post-render Freeze/Motion-Curve/Seek/LUFS QA."
 ---
 
 # Motion Video as Code: Master Director & Architect (`motion-video-director`)
@@ -63,7 +63,7 @@ Agent 严禁在后台执行长阻塞任务而保持沉默：
   - *Lens A (物理实体化)*：将产品抽象能力转化为可见的物理世界（如风洞气动测试、微距激光测量）。
   - *Lens B (矛盾戏剧化)*：将未解决的痛点放大到触目惊心，再给予定点化解。
   - *Lens C (形式母题)*：确立一个**永不消失的信物（Carrier Object）**（如激光游标、光标、流动能量线），贯穿全片转场。
-- **技法库智能抽样 (Technique Draw)**：强制调用 `cinetic pick.py`，从 14 大类 273 项测定技法库中按体裁与能量进行加权抽样（约每 2.5s 抽取 1 项），严禁凭空拍脑袋收敛于相同的陈旧套路。
+- **技法库智能抽样 (Technique Draw)**：强制调用 `skills/cinetic/scripts/pick.py`，从 14 大类 273 项测定技法库中按体裁与能量进行加权抽样（约每 2.5s 抽取 1 项），严禁凭空拍脑袋收敛于相同的陈旧套路。
 - **淘汰律 (The Deletion Test)**：若将片中主角替换为竞品依然成立，立刻推倒重写！
 
 ### 2. O - Optics & Swiss Bento Grid (光学质感与模块化网格)
@@ -134,7 +134,7 @@ Agent 严禁在后台执行长阻塞任务而保持沉默：
 
 ### 6. N - No-Slop Dual Gate (双模态自检门禁)
 - **视觉门禁**：渲染完成后，强制导出 **4×2 Contact Sheet (接触印样)**，逐项核验 HB1–HB18 十八大硬禁令。
-- **听觉门禁**：运行 `scripts/audio/listen.py` 导出**听觉声谱/对齐印样 (`sound_sheet.png`)**，并运行 `earshot critique` 对照 7 部旗舰发布片从 23 项声学指标自动打分。
+- **听觉门禁**：运行 `skills/cinetic/scripts/audio/listen.py` 导出**听觉声谱/对齐印样 (`sound_sheet.png`)**，并运行 `earshot critique` 对照 7 部旗舰发布片从 23 项声学指标自动打分。
 
 ---
 
@@ -161,7 +161,7 @@ Agent 严禁在后台执行长阻塞任务而保持沉默：
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │  Phase 1: 动效导演层 (Motion Director Layer)                                 │
 │  • 概念三棱镜推演: 实体化隐喻、冲突可视化、确立贯穿信物 (Carrier Object)      │
-│  • 技法智能抽样: 运行 cinetic pick.py 从 273 项参数化动效库中加权抽样        │
+│  • 技法智能抽样: 运行 skills/cinetic/scripts/pick.py 从 273 项动效库加权抽样 │
 │  • 瑞士网格构建: Bento Grid 模块化布局、安全留白 (≥64px)、遥测侧栏排布        │
 │  • 碎词分段编排: Fragment Chains (1–4 词)、字画交替律 (30–90f Picture Beat) │
 │  • 刚性时钟驱动: 60fps / BPM 状态机卡点 (PACE.calm 100 / PACE.crisp 120)     │
@@ -186,7 +186,7 @@ Agent 严禁在后台执行长阻塞任务而保持沉默：
 │  • 像素取证与音频同步: cinetic/scripts/forensics.py + av-audit.py            │
 │  • 像素级差分复核: 运行 motion2code frame_diff.py 计算原片与代码帧差异评分   │
 │  • 20 大 AI 廉价感死刑门禁 (Anti-Slop Hard Bans HB1–HB20) 逐条排查           │
-│  • 听觉频谱印样: scripts/audio/listen.py 输出 sound_sheet.png 声谱对齐图     │
+│  • 听觉频谱印样: skills/cinetic/scripts/audio/listen.py 输出 sound_sheet.png │
 │  • 旗舰发布片打分: earshot critique 23 项声学指标 & AAC 编码后 ebur128 复测  │
 │  • 审查未通过 -> 自动打回修改代码 -> 通过后向用户汇报交付                     │
 └──────────────────────────────────────────────────────────────────────────────┘
@@ -247,26 +247,17 @@ Agent 严禁在后台执行长阻塞任务而保持沉默：
 
 | 需求场景 | 调度底层 Skill | 具体承接操作 |
 | :--- | :--- | :--- |
-| **防同质化动效灵感抽取** | `cinetic` | 运行 `scripts/pick.py` 智能抽样 273 项测定技法库及其参数 |
-| **分段碎词流与阅读节拍** | `cinetic` | 调度 `Chain.tsx`、`pace.ts` 计算字画交替 Picture Beat 与驻留窗口 |
-| **镜头转场与矢量切接** | `motion-doctrine` / `cut-the-curve` | 遵循矢量连续律、选用五大无缝转场 (`waterfall`, `rack-focus` 等) |
-| **Remotion 旗舰动效装配** | `motion-design` | 调取 Easing 贝塞尔常数、Spring 临界阻尼与亚像素运动模糊 (`--blur`) |
-| **专属音效包生成与管理** | `earshot` (`kit`) | `earshot kit init --preset launch|calm|crisp|minimal` 生成专属 `kit.json`，执行 `bed_db` 相对配乐混音与 `offset_ms` 毫秒级锁相 |
-| **纯代码物理拟声音效合成** | `earshot` (`forge` / `sfx`) | 252 种全代码物理拟声（含 7 大全新音效家族），按需生成 cut_hit/reverse_swell/ui_pop/knock/mallet/drip/shutter 等 |
-| **全片音频感知与听觉接触印样** | `earshot` (`sheet` / `critique`) | 运行 `scripts/audio/listen.py` 导出声谱对齐印样，对标顶级发布片进行 23 项声学指标审查 |
-| **参考视频逆向与工程解构** | `motion-video-deconstruct` | 将参考 MP4 逆向解构为标准 `motion_blueprint.json`，并一键编译为 Remotion TSX 模块化工程 |
-| **HTML/GSAP 视频合成** | `hyperframes` 系列 | 使用 `hyperframes` 规范构建单 HTML 项目并进行 seek-safe 渲染 |
-| **高品味 Web/App 界面与滚动大场景** | `taste-skill` (v2.1) | 调度 `draw.mjs` / `draw.mjs --app` 抽取 Awwwards 级设计蓝图与真实 App 界面组件 (`app.css`, `charts.js`)，使用 `stage.js` 驱动滚动大场景，通过 `inspect.mjs` / `lint.mjs` 严控页面几何与视觉品味，调用 `assets.mjs` 免 API 获取真实档案素材 |
-| **Three.js 60fps 物理仿真** | `web-sims` | 编写纯时间函数 `render(t)` 页面并调用 capture 脚本无损录制 |
-| **口播、字幕与时间轴剪辑** | `chatcut-*` MCP | 调度 ChatCut 桌面版多轨时间轴、音频人声隔离与语音字幕 |
-| **纯平面矢量轻动效与无缝循环** | `motion2code` | 重构为纯内联 SVG + 单 GSAP 时间轴单文件 `index.html`，零位图依赖、4K/8K 视网膜矢量无损自适应 |
-| **视频前期自动分帧与色彩提取** | `motion2code` (`study_video`) | 运行 `python skills/motion2code/scripts/study_video.py` 自动 0.25s 切片、捕获转场 Cut、提取极简调色板与首尾平滑度 |
-| **代码原片像素级逐帧差分比对** | `motion2code` (`frame_diff`) | 运行 `python skills/motion2code/scripts/frame_diff.py` 逐帧并排差分评分，精准排查最不像原片的翻车瞬间 |
-| **动效代码纯度与运行时质检** | `motion2code` (`check_anim`) | 运行 `python skills/motion2code/scripts/check_anim.py --runtime`，无头浏览器核验无位图依赖、seek 确定性与平滑循环 |
-| **界面录屏复刻真实可交互落地页** | `motion2code` (`site.html`) | 将静态界面演示转化为 GSAP ScrollTrigger 真实平滑滚动页面与真实按钮交互 |
-| **无头 3D 资产、粒子与实时调参** | `blender-skills` / `three.quarks` / `Tweakpane` | `blender -b` 程序化生成道具与非穿插校验；`three.quarks` 粒子；`Tweakpane` 实时参数滑块；`react-postprocessing` 电影级后期 |
-| **风格库、涂鸦循环与数学公式动画** | `mg-styles-15` / `huashu-art-motion` / `anidoodle` / `Manim` | 15 种动效风格、35 种绘画艺术风格、纯代码手绘循环、Manim 公式推演 |
-| **免费 CC 音效与定量运动 QA** | `Openverse API` / `references/cinema-physics-and-qa-playbook.md` | 免版权音效兜底检索；`freezedetect`、运动曲线、`cold-seek` 与 AAC 后响度门禁 |
+| **防同质化动效灵感抽取 `[Repo-Local]`** | `cinetic` | 运行 `skills/cinetic/scripts/pick.py` 智能抽样 273 项测定技法库及其参数 |
+| **分段碎词流与阅读节拍 `[Repo-Local]`** | `cinetic` | 调度 `Chain.tsx`、`pace.ts` 计算字画交替 Picture Beat 与驻留窗口 |
+| **通用防冻结与响度门禁 `[Repo-Local]`** | `motion-video-director` | 运行 `skills/motion-video-director/scripts/motion_qa_gate.py`（`freezedetect` + 运动曲线 + `cold-seek` + AAC 后 `ebur128`） |
+| **Remotion 像素取证与音画同步 `[Repo-Local]`** | `cinetic` | 运行 `skills/cinetic/scripts/forensics.py` 与 `skills/cinetic/scripts/av-audit.py` |
+| **专属音效包与物理拟声 `[Requires .venv]`** | `earshot` (`0.4+`) | 需本地 `./earshot` + `.venv`：`earshot kit` / `forge` / `critique`；视觉声谱印样用 `skills/cinetic/scripts/audio/listen.py` |
+| **参考视频逆向与工程解构 `[Repo-Local]`** | `motion-video-deconstruct` | 将参考 MP4 逆向解构为 `motion_blueprint.json` 并编译为 Remotion TSX（桥梁：`vac_studio/server/ast_engine/ir_bridge.ts`） |
+| **高品味 Web/App 界面设计 `[Repo-Local]`** | `taste-skill` (`v2.1`) | 调度 `skills/taste-skill/scripts/draw.mjs` / `inspect.mjs` / `lint.mjs` / `assets.mjs` |
+| **纯平面矢量轻动效与无缝循环 `[Repo-Local]`** | `motion2code` | 运行 `skills/motion2code/scripts/study_video.py` / `frame_diff.py` / `check_anim.py` / `render_anim.py` |
+| **真实录音配乐规范 `[Spec-Only / External]`** | `real-sound` | 仅含工作流规范（混音脚本需外部提供，无源码时降级回 `earshot` 或 `ffmpeg`） |
+| **全局扩展技能 `[Global Agent Skills]`** | `hyperframes` / `web-sims` / `motion-doctrine` / `cut-the-curve` / `chatcut-*` | 由宿主 Agent 环境提供（非本仓库内嵌文件）；Three.js `renderAt(t)` 遵循 `references/cinema-physics-and-qa-playbook.md` |
+| **外部可选工具参考 `[External Optional]`** | `blender-skills` / `Manim` / `three.quarks` / `Tweakpane` / `Openverse API` | 按需安装的外部生态能力，详参 `references/cinema-physics-and-qa-playbook.md` |
 
 ---
 
@@ -285,6 +276,6 @@ Agent 严禁在后台执行长阻塞任务而保持沉默：
    - 明确音频方案：初始化 `earshot kit`（配乐发布片强制选用 **`--preset launch`**，文本片选 `calm`），公布 `bed_db` 相对配乐电平、`mix.stop_down` 瞬态避让与 `offset_ms` 心理声学微时差。
 3. **渲染并生成视听双模态证据 (Phase 3 闭环)**：
    - 导出 `contact_sheet.png` (4×2 视觉关键帧切片)。
-   - 运行 `scripts/audio/listen.py` 导出 `sound_sheet.png` (声谱与对齐标记)。
+   - 运行 `skills/cinetic/scripts/audio/listen.py` 导出 `sound_sheet.png` (声谱与对齐标记)。
    - 运行 HB1–HB20 自检清单、`ffmpeg freezedetect`、`frame_diff` 运动曲线与 `cold-seek` 校验，并给出逐项定量合规判定。
 4. **交付最终成品与自检报告**：附带视觉印样与声学测量数据向用户汇报交付！

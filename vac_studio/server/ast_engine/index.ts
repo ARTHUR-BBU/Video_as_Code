@@ -7,3 +7,4 @@ export * from './motion_ir.js';
 export * from './parser.js';
 export * from './emitter.js';
 export * from './guard.js';
+export * from './ir_bridge.js';

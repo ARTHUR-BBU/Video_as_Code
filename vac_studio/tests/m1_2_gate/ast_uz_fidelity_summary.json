@@ -1,7 +1,7 @@
 {
   "testCaseId": "TC-AST-02",
   "standard": "ISO/IEC/IEEE 29148:2018 (PRD v2.1.2 §3.3.2 & §8.3)",
-  "evaluatedAt": "2026-11-19T04:52:19.413Z",
+  "evaluatedAt": "2026-11-20T05:58:08.834Z",
   "workload": {
     "targetFile": "fixtures/ast_sample_act1.tsx",
     "unmanagedSymbol": "useComplexPhysics",
