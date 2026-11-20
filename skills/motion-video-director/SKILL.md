@@ -1,6 +1,6 @@
 ---
 name: motion-video-director
-description: "Orchestration policy and quantitative QA gate (`scripts/motion_qa_gate.py`, HB1–HB20) for code-driven video production. Do NOT select as the primary leaf generator when `cinetic` (new Remotion/HyperFrames film), `motion2code` (flat SVG+GSAP rebuild), `motion-video-deconstruct` (MP4 to Remotion blueprint), or `taste-skill` (web/app UI) directly matches. Load alongside the chosen leaf skill to enforce M.O.T.I.O.N. standards, closed-form kinematics, and post-render Freeze/Motion-Curve/Seek/LUFS QA."
+description: "Orchestration policy and quantitative QA gate (`skills/motion-video-director/scripts/motion_qa_gate.py`, HB1–HB20) applied AFTER a leaf skill is chosen. Never the primary entry point. Excludes: new film creation (`cinetic`), flat SVG+GSAP rebuild (`motion2code`), MP4-to-Remotion blueprint deconstruction (`motion-video-deconstruct`), web/app UI (`taste-skill`), and audio synthesis/sourcing (`earshot`/`real-sound`)."
 ---
 
 # Motion Video as Code: Master Director & Architect (`motion-video-director`)
@@ -182,8 +182,8 @@ Agent 严禁在后台执行长阻塞任务而保持沉默：
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │  Phase 3: 视听双模态自检门禁 (Aesthetic & Auditory Verification Gate)        │
 │  • 视觉像素印样: 生成 4×2 Contact Sheet (接触印样)，审查节奏、对比度与排版   │
-│  • 定量防冻结与冷跳转门禁: 运行 scripts/motion_qa_gate.py (freezedetect/运动曲线)│
-│  • 像素取证与音频同步: cinetic/scripts/forensics.py + av-audit.py            │
+│  • 定量防冻结门禁: skills/motion-video-director/scripts/motion_qa_gate.py    │
+│  • 像素取证与同步: skills/cinetic/scripts/forensics.py + av-audit.py         │
 │  • 像素级差分复核: 运行 motion2code frame_diff.py 计算原片与代码帧差异评分   │
 │  • 20 大 AI 廉价感死刑门禁 (Anti-Slop Hard Bans HB1–HB20) 逐条排查           │
 │  • 听觉频谱印样: skills/cinetic/scripts/audio/listen.py 输出 sound_sheet.png │

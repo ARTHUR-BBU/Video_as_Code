@@ -1,34 +1,38 @@
 {
   "$schema": "https://video-as-code.org/schemas/skills-manifest.v1.json",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "routing_policy": "skills/ROUTER.md",
   "orchestrator_policy": "skills/motion-video-director/SKILL.md",
+  "script_path_convention": "skills/<skill>/scripts/<script>",
   "slots": [
     {
       "slot": "new_launch_or_product_film",
       "owner": "cinetic",
       "path": "skills/cinetic/SKILL.md",
       "status": "ready-in-repo",
+      "pipeline": ["earshot", "motion-video-director"],
       "triggers": ["launch film", "product video", "promo clip", "new video from scratch", "做产品宣传片", "从零做视频"],
       "excludes": ["rebuild existing video as SVG", "deconstruct MP4 to blueprint", "landing page UI"],
-      "dependencies": ["node >= 22", "ffmpeg >= 6", "python >= 3.11", "earshot (optional for audio kit)"],
-      "fallback": "HyperFrames or silent master + motion_qa_gate.py"
+      "dependencies": ["node >= 22", "ffmpeg >= 6", "python >= 3.11", "earshot 0.4+ (optional for audio kit)"],
+      "fallback": "Silent/bed master + skills/motion-video-director/scripts/motion_qa_gate.py"
     },
     {
       "slot": "deconstruct_video_to_remotion_blueprint",
       "owner": "motion-video-deconstruct",
       "path": "skills/motion-video-deconstruct/SKILL.md",
       "status": "partial-in-repo",
+      "pipeline": ["motion-video-director"],
       "triggers": ["deconstruct video", "extract motion blueprint", "参考视频拆解成 Remotion 工程", "逆向分镜"],
       "excludes": ["flat inline SVG loop", "create from scratch without reference"],
       "dependencies": ["ffmpeg", "skills/motion2code/scripts/study_video.py", "skills/motion-video-director/scripts/motion_qa_gate.py"],
-      "fallback": "Use motion2code study_video.py + manual blueprint JSON"
+      "fallback": "Use skills/motion2code/scripts/study_video.py + manual blueprint JSON"
     },
     {
       "slot": "rebuild_flat_motion_as_svg_gsap",
       "owner": "motion2code",
       "path": "skills/motion2code/SKILL.md",
       "status": "ready-in-repo",
+      "pipeline": ["motion-video-director"],
       "triggers": ["convert to SVG/GSAP", "recreate GIF/Lottie", "seamless loop HTML", "界面录屏转交互网页", "矢量无损动效"],
       "excludes": ["Remotion multi-scene film", "3D rendering", "photographic footage"],
       "dependencies": ["python >= 3.9", "ffmpeg", "playwright"],
@@ -39,9 +43,10 @@
       "owner": "earshot",
       "path": "skills/earshot/SKILL.md",
       "status": "requires-local-venv",
+      "pipeline": ["motion-video-director"],
       "triggers": ["earshot", "procedural sfx", "audio critique", "listen to soundtrack", "程序化音效", "声学质检"],
       "excludes": ["source real licensed recordings from Freesound/Mixkit"],
-      "dependencies": ["local checkout ./earshot and .venv/Scripts/earshot.exe (earshot 0.4+)"],
+      "dependencies": ["local checkout ./earshot and .venv (earshot 0.4+)"],
       "fallback": "ffmpeg ebur128 check via skills/motion-video-director/scripts/motion_qa_gate.py"
     },
     {
@@ -49,16 +54,18 @@
       "owner": "real-sound",
       "path": "skills/real-sound/SKILL.md",
       "status": "spec-only-external-scripts",
+      "pipeline": ["motion-video-director"],
       "triggers": ["real recordings", "Freesound", "Mixkit", "Openverse", "CC-licensed foley", "真实录音配乐"],
       "excludes": ["pure CPU procedural synthesis (use earshot)"],
       "dependencies": ["external audio sourcing & mixing scripts (not bundled in repo)"],
-      "fallback": "Use earshot procedural kit or manual ffmpeg mux + motion_qa_gate.py"
+      "fallback": "Use earshot procedural kit or manual ffmpeg mux + skills/motion-video-director/scripts/motion_qa_gate.py"
     },
     {
       "slot": "frontend_web_and_app_art_direction",
       "owner": "taste-skill",
       "path": "skills/taste-skill/SKILL.md",
       "status": "ready-in-repo",
+      "pipeline": [],
       "triggers": ["landing page", "dashboard", "web app UI", "redesign site", "落地页", "后台看板"],
       "excludes": ["rendered MP4 video production"],
       "dependencies": ["node", "playwright (for inspect.mjs)"],
@@ -69,9 +76,10 @@
       "owner": "motion-video-director",
       "path": "skills/motion-video-director/SKILL.md",
       "status": "orchestrator-policy-with-qa-script",
-      "triggers": ["audit rendered video", "HB1-HB20 check", "multi-engine dispatch", "导演编排", "防冻结质检"],
-      "excludes": ["do not hijack leaf tasks when cinetic/motion2code/taste-skill clearly matches"],
-      "dependencies": ["python + numpy + ffmpeg (for scripts/motion_qa_gate.py)"],
+      "pipeline": [],
+      "triggers": ["audit rendered video", "HB1-HB20 check", "防冻结质检"],
+      "excludes": ["never primary entry point when cinetic/motion2code/motion-video-deconstruct/taste-skill/earshot/real-sound matches"],
+      "dependencies": ["python + numpy + ffmpeg (for skills/motion-video-director/scripts/motion_qa_gate.py)"],
       "fallback": "N/A"
     }
   ]
