@@ -40,3 +40,6 @@ jobs:
 
       - name: Skill Architecture & Routing Audit Gate (A1/A2/A3/A4/A6)
         run: npm --prefix vac_studio run test:skills
+
+      - name: TC-SYNC-01 Multi-Asset Blind Audit Gate (60/24/30fps)
+        run: python3 tests/tc_sync_01/run_full_blind_audit.py
