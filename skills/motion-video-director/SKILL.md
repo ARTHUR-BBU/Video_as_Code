@@ -1,6 +1,6 @@
 ---
 name: motion-video-director
-description: "MANDATORY SUPREME DIRECTOR & ARCHITECT for all Motion Video, Video-as-Code, kinetic typography, programmatic animation, dynamic UI demos, product launch films, and audiovisual productions. Orchestrates the 4-stage pipeline: (0) Intake & Dispatch (Remotion Tier-1, HyperFrames, motion2code SVG+GSAP Vector Loop, MoviePy, Web-Sims), (1) Motion Director Layer (M.O.T.I.O.N. Charter, Metaphor, Swiss Bento Grid, Beat Clock, Vector Continuity, Carrier Object, 273 Technique Pick), (2) Multi-Engine Code Assembly & Dual-Engine Sound Design (earshot 0.4+ with 252-sound bank, launch preset, bed-relative mix & psychoacoustic offset + real-sound), and (3) Dual Sensory Gate (Anti-Slop Hard Bans HB1–HB19, 4×2 Visual Contact Sheet, motion2code frame_diff pixel verification, earshot Auditory Spectrogram Sheet & 23-Metric Critique). Eliminates static slideshow slop in favor of true cinematic motion design."
+description: "MANDATORY SUPREME DIRECTOR & ARCHITECT for all Motion Video, Video-as-Code, kinetic typography, programmatic animation, dynamic UI demos, product launch films, and audiovisual productions. Orchestrates the 4-stage pipeline: (0) Intake & Dispatch (Remotion Tier-1, HyperFrames, motion2code SVG+GSAP Vector Loop, MoviePy, Web-Sims, Manim/Blender 3D), (1) Motion Director Layer (M.O.T.I.O.N. Charter, Metaphor, Swiss Bento Grid, Beat Clock, Closed-Form Kinematics & Lens Depth Tracking, Carrier Object, 273 Technique Pick), (2) Multi-Engine Code Assembly & Dual-Engine Sound Design (earshot 0.4+ with 252-sound bank, launch preset, bed-relative mix & psychoacoustic offset + real-sound/Openverse), and (3) Dual Sensory Gate (Anti-Slop Hard Bans HB1–HB20, 4×2 Visual Contact Sheet, freezedetect + frame_diff motion curve + cold-seek + hero >=170px check, earshot Auditory Spectrogram Sheet & post-AAC ebur128). Eliminates static slideshow slop and frozen renders in favor of true cinematic motion design."
 ---
 
 # Motion Video as Code: Master Director & Architect (`motion-video-director`)
@@ -96,6 +96,11 @@ Agent 严禁在后台执行长阻塞任务而保持沉默：
   - 入场：`power4.out` 或 `bezier(0.16, 1, 0.3, 1)`（高速切入，柔和刹车）。
   - 出场：`power4.in` 或 `bezier(0.6, 0, 0.9, 0.35)`（蓄力加速冲出）。
 - **绝对禁止待机无动机晃动 (Ban on Idle Wobble)**：动效必须执行任务，动作完成即坚决静止驻留。
+- **解析闭式弹簧与体积守恒挤压拉伸 (Closed-Form Kinematics)**（详参 `references/cinema-physics-and-qa-playbook.md`）：
+  - 所有弹簧必须为时间 `t` 的**纯解析闭式函数**（严禁逐帧积分，确保冷跳转 `cold-seek` 确定性）；阻尼比 $\zeta$ 严格分级：**`1.0`**（UI/文字零回弹）、**`0.8`**（产品/Logo 单次微沉降）、**`0.5`**（角色/吉祥物 2 次弹跳）。
+  - **体积守恒挤压拉伸**：下蹲 `1.20×0.75`、起跳 `0.85×1.28`、落地 `1.25×0.75`；60fps 跟随延迟：手臂滞后 `4 帧`，尾饰/领结滞后 `6 帧`。
+- **真实光学镜头与动态追焦 (Lens & Depth Tracking)**：
+  - 焦段规范：`35mm` 全景空间、`50mm` 主动作、`85mm` 面部特写；浅景深焦点必须**逐帧追踪主角真实深度**，且**限制主角自身运动模糊上限**以保证面部/文字锐利；1080p 下主角像素宽度 **≥ 170px**（群像 ≥ 95px），确保手机端清晰可读。
 
 ### 5. O - Organic Audio & Earshot (专属音效包、动态配乐相对混音与纯物理拟声)
 - **视听因果律 (Causal Sound)**：每一个击打音必须在画面中找到发射源。
@@ -149,6 +154,7 @@ Agent 严禁在后台执行长阻塞任务而保持沉默：
 │    - Engine D (Web Sims): Three.js/Canvas 纯时间函数 60fps 物理演进采集      │
 │    - Engine E (ChatCut Desktop): 多轨时间轴、人声隔离与语音字幕自动化        │
 │    - Engine F (motion2code - 矢量无损循环): Inline SVG + GSAP 单文件，极轻量矢量 │
+│    - Engine G (Manim / Blender Headless): 数学公式推演与 Blender 3D 资产脚本  │
 └──────────────────────────────────────┬───────────────────────────────────────┘
                                           │
                                           ▼
@@ -176,10 +182,12 @@ Agent 严禁在后台执行长阻塞任务而保持沉默：
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │  Phase 3: 视听双模态自检门禁 (Aesthetic & Auditory Verification Gate)        │
 │  • 视觉像素印样: 生成 4×2 Contact Sheet (接触印样)，审查节奏、对比度与排版   │
+│  • 定量防冻结与冷跳转门禁: 运行 scripts/motion_qa_gate.py (freezedetect/运动曲线)│
+│  • 像素取证与音频同步: cinetic/scripts/forensics.py + av-audit.py            │
 │  • 像素级差分复核: 运行 motion2code frame_diff.py 计算原片与代码帧差异评分   │
-│  • 19 大 AI 廉价感死刑门禁 (Anti-Slop Hard Bans HB1–HB19) 逐条排查           │
+│  • 20 大 AI 廉价感死刑门禁 (Anti-Slop Hard Bans HB1–HB20) 逐条排查           │
 │  • 听觉频谱印样: scripts/audio/listen.py 输出 sound_sheet.png 声谱对齐图     │
-│  • 旗舰发布片打分: earshot critique 23 项声学指标机器评分与时戳修正建议      │
+│  • 旗舰发布片打分: earshot critique 23 项声学指标 & AAC 编码后 ebur128 复测  │
 │  • 审查未通过 -> 自动打回修改代码 -> 通过后向用户汇报交付                     │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -195,8 +203,9 @@ Agent 严禁在后台执行长阻塞任务而保持沉默：
 | **纯平面矢量轻动效、无缝循环动图 (Looping GIF/SVG)** | **Engine F (motion2code 矢量无损)** | 零位图依赖、<100KB 单文件极致轻量、4K/8K 视网膜矢量无损自适应，单 GSAP 时间轴严格闭环；严禁使用重型视频引擎。 |
 | **动态矢量 Logo、品牌微动效、动态图标** | **Engine F (motion2code 矢量无损)** | 纯 SVG path 补间变形，嵌入网页即插即用，零外部播放器开销。 |
 | **Web / App 界面录屏复刻为真实交互网站** | **Engine F (motion2code `site.html`)** | 将静态视效转化为 GSAP ScrollTrigger 真实滚动落地页与真实按钮点击。 |
-| **3D 机械结构、粒子系统、连续物理演进仿真** | **Engine D (Web-Sims Three.js)** | 纯时间函数驱动 Canvas 物理仿真。 |
-| **单脚本微纪录片、轻量自动剪辑** | **Engine C (Python Editorial)** | Python MoviePy/NumPy 批量微纪录片。 |
+| **3D 机械结构、粒子系统、连续物理演进仿真** | **Engine D (Web-Sims Three.js)** | 纯时间函数 `renderAt(t)` 驱动，配合 `three.quarks` 粒子、`react-postprocessing` 后期与 `Tweakpane` 实时调参。 |
+| **数学公式、算法推导、几何定理演示** | **Engine G (Manim / Blender)** | Manim 公式动画或 `blender -b --factory-startup -P` 无头 3D 道具生成（导出 GLB + ES 模块）。 |
+| **单脚本微纪录片、轻量自动剪辑** | **Engine C (Python Editorial)** | Python MoviePy/NumPy 批量微纪录片，或 Rust `EffectCraft` 高速合成。 |
 
 ### 跨引擎逆向工具链赋能 (Cross-Engine Reverse-Engineering Tooling)
 - **前期自动解构 (`study_video.py`)**：任何参考视频（无论后续是用 Remotion 还是 SVG 重建），均可直接调用 `python skills/motion2code/scripts/study_video.py source.mp4 -o study/`，以 0.25s 间隔自动切片、捕捉转场 Cut、自动提取极简调色板 (Color Palette) 并生成 `study.json`。
@@ -205,7 +214,7 @@ Agent 严禁在后台执行长阻塞任务而保持沉默：
 
 ---
 
-## 四、 19 大 AI 廉价感死刑门禁 (The Anti-Slop Hard Bans)
+## 四、 20 大 AI 廉价感死刑门禁 (The Anti-Slop Hard Bans HB1–HB20)
 
 凡接触印样中出现以下任何特征，直接判为“AI塑料廉价感”，必须立刻打回重写：
 
@@ -230,6 +239,7 @@ Agent 严禁在后台执行长阻塞任务而保持沉默：
 | **HB17** | **文字滥用弹性震颤 (Springs on Type / F11)**<br>字体进入时产生弹簧 Overshoot 抖动 | 破坏字体严谨骨架，产生业余玩具感 | **文字一律使用平滑贝塞尔 `outSoft` 或临界阻尼 `SPR.calm`**，严禁弹跳与震颤。 |
 | **HB18** | **死寂无动静驻留 (Frozen Static Reading Hold)**<br>文字出现后全屏所有像素绝对静止死锁 | 画面失活，被误判为卡顿假死 | **阅读驻留窗内保持 0.3–1 px/f 缓慢微漂移**或 1–3% 镜头微爬升，维持呼吸生命感。 |
 | **HB19** | **廉价侧链抽吸与固定分贝炸耳 (Cheap Sidechain Ducking & Fixed-dB Blast)**<br>音效一出背景音乐就抽吸变形，或音效被配乐淹没/突兀炸响 | 典型业余混音特征，破坏电影级声场质感与沉浸感 | **必须执行 `earshot 0.4+` 的 `bed_db` 相对配乐混音**（音效浮于音乐前1秒中位数上 3~10dB），严禁全局 Ducking 抽吸；重击前 0.3s 执行 6~12dB 瞬态 `stop_down` 并在打击瞬间瞬态复原；视听对齐强制引入 `offset_ms` 心理声学时延律！ |
+| **HB20** | **静帧盲审漏网冻结与冷跳转失效 (Unplanned Freeze & Non-Deterministic Seek)**<br>仅看静态 Contact Sheet 放行，实际成片大段冻结、主角缩成像素点，或直接跳转第 300 帧与顺序渲染不一致 | 静态抽帧永远抓不出“画面卡死”；逐帧积分状态机导致 Seek 错乱 | **强制执行定量运动门禁**（详参 `references/cinema-physics-and-qa-playbook.md`）：① `ffmpeg freezedetect` 0 意外冻结；② Python `frame_diff` 运动曲线核验每拍皆有波峰；③ `cold-seek` 校验 `frame(300, cold) == frame(300, seq)`；④ 主角 1080p 宽度 ≥ 170px；⑤ AAC 编码**后**复测 `ebur128`（-14 LUFS / ≤ -2 dBTP）。 |
 
 ---
 
@@ -254,6 +264,9 @@ Agent 严禁在后台执行长阻塞任务而保持沉默：
 | **代码原片像素级逐帧差分比对** | `motion2code` (`frame_diff`) | 运行 `python skills/motion2code/scripts/frame_diff.py` 逐帧并排差分评分，精准排查最不像原片的翻车瞬间 |
 | **动效代码纯度与运行时质检** | `motion2code` (`check_anim`) | 运行 `python skills/motion2code/scripts/check_anim.py --runtime`，无头浏览器核验无位图依赖、seek 确定性与平滑循环 |
 | **界面录屏复刻真实可交互落地页** | `motion2code` (`site.html`) | 将静态界面演示转化为 GSAP ScrollTrigger 真实平滑滚动页面与真实按钮交互 |
+| **无头 3D 资产、粒子与实时调参** | `blender-skills` / `three.quarks` / `Tweakpane` | `blender -b` 程序化生成道具与非穿插校验；`three.quarks` 粒子；`Tweakpane` 实时参数滑块；`react-postprocessing` 电影级后期 |
+| **风格库、涂鸦循环与数学公式动画** | `mg-styles-15` / `huashu-art-motion` / `anidoodle` / `Manim` | 15 种动效风格、35 种绘画艺术风格、纯代码手绘循环、Manim 公式推演 |
+| **免费 CC 音效与定量运动 QA** | `Openverse API` / `references/cinema-physics-and-qa-playbook.md` | 免版权音效兜底检索；`freezedetect`、运动曲线、`cold-seek` 与 AAC 后响度门禁 |
 
 ---
 
@@ -273,5 +286,5 @@ Agent 严禁在后台执行长阻塞任务而保持沉默：
 3. **渲染并生成视听双模态证据 (Phase 3 闭环)**：
    - 导出 `contact_sheet.png` (4×2 视觉关键帧切片)。
    - 运行 `scripts/audio/listen.py` 导出 `sound_sheet.png` (声谱与对齐标记)。
-   - 运行 HB1–HB19 自检清单并给出逐项合规判定。
+   - 运行 HB1–HB20 自检清单、`ffmpeg freezedetect`、`frame_diff` 运动曲线与 `cold-seek` 校验，并给出逐项定量合规判定。
 4. **交付最终成品与自检报告**：附带视觉印样与声学测量数据向用户汇报交付！

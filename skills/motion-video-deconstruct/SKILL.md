@@ -258,4 +258,8 @@ python skills/motion2code/scripts/frame_diff.py ref_video.mp4 out.html -o dir/di
 1. **调用 `motion-video-deconstruct`**：提取该视频的 `motion_blueprint.json` 与 `ref_contact_sheet.png`。
 2. **内容置换 (Content Injection)**：保留原片的网格比例、动力学节奏与转场矢量，置换为用户指定的产品文案、组件形态与品牌配色。
 3. **Remotion 原生编译**：生成模块化 React 动效组件并在本地极速渲染。
-4. **双联印样自检 (Dual Verification)**：生成重构视频的 `contact_sheet.png`，与原片印样并列审查，确保 100% 掌握原片的动效灵魂且完全消除 AI 塑料感！
+4. **双联印样与定量门禁自检 (Dual Verification)**：
+   - 生成重构视频的 `contact_sheet.png`，与原片印样并列审查；
+   - 运行 `python skills/motion-video-director/scripts/motion_qa_gate.py <out.mp4>` 执行 HB20 定量防冻结与 AAC 后响度门禁；
+   - Remotion 工程联动运行 `python skills/cinetic/scripts/forensics.py <out.mp4> --cues out/cues.json`；
+   - 提取的弹簧动力学参数按闭式阻尼比 $\zeta$（UI `1.0` / 产品 `0.8` / 角色 `0.5`）编译，严禁逐帧积分。
